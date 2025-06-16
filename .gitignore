@@ -2,3 +2,57 @@
 venv/
 backend/venv/
 .env/
+
+
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VSCode settings
+.vscode/
+
+# Logs and metadata
+*.log
+logs/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Python environment files
+*.egg
+*.egg-info/
+dist/
+build/
+
+# # Model files (optional if too large)
+# *.h5
+# *.pth
+# *.ckpt
+
+# Uploaded files or temporary data
+backend/data/
+*.tmp
+*.bak
+
+# Streamlit-specific
+.streamlit/config.toml
+.streamlit/secrets.toml
+
+# Runtime files
+runtime.txt
+
+# User-specific project files
+*.swp
+*~
