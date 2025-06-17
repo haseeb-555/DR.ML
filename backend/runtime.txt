@@ -1,3 +1,4 @@
 from dr.ml folder:
 streamlit run backend/testing/app1.py
 streamlit run backend/testing/app2.py
+PYTHONPATH=. streamlit run backend/testing/app3.py
