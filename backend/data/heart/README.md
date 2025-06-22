@@ -107,7 +107,7 @@ Saved to:
 
 ## 📓 Training Reference
 
-📔 [Colab Notebook – Heart Disease Model Training](https://drive.google.com/file/d/1-1Zoz_4wbAdTe6HJWM8kJVDVx6EaFy5f/view?usp=sharing)
+📔 [Colab Notebook – Heart Disease Model Training](https://colab.research.google.com/drive/1-1Zoz_4wbAdTe6HJWM8kJVDVx6EaFy5f?authuser=2)
 
 ---
 

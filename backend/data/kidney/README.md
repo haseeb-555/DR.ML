@@ -114,7 +114,7 @@ Top 3 performing models (saved as `kidney.joblib`):
 
 ## 🧾 References
 
-📔 [Google Colab Notebook – Kidney Model Training](https://drive.google.com/file/d/1vtNHjWXEUKP2rHFa-xQJbBcLBxPjZC5N/view?usp=sharing)
+📔 [Google Colab Notebook – Kidney Model Training](https://colab.research.google.com/drive/1vtNHjWXEUKP2rHFa-xQJbBcLBxPjZC5N?authuser=2)
 
 ---
 
