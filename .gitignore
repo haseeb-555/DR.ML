@@ -63,4 +63,3 @@ backend/models/skin.keras
 backend/models/skin2.h5
 backend/models/skin2.keras
 backend/preprocessing/skin.py
-backend/testing/app3.py
