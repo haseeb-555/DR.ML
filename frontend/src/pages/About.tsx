@@ -55,17 +55,29 @@ const About = () => {
     <div className="min-h-screen py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-medical-blue via-medical-purple to-medical-red bg-clip-text text-transparent">
-              About DR.ML
-            </span>
-          </h1>
-          <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-            DR.ML is an advanced medical AI platform that harnesses the power of machine learning to predict and analyze critical medical conditions. 
-            Our mission is to make early disease detection accessible, accurate, and immediate.
-          </p>
+        <section className="relative py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full px-8 py-4 mb-8 shadow-lg">
+              
+              <span className="text-blue-600 font-bold text-lg">About DR.ML</span>
+            </div>
+            
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 leading-tight">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 bg-clip-text text-transparent">
+                AI-Powered Medical
+              </span>
+              <br />
+              <span className="text-gray-800">Diagnostics</span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+              We develop cutting-edge machine learning models for early disease detection, 
+              helping healthcare professionals make faster and more accurate diagnoses.
+            </p>
+          </div>
         </div>
+      </section>
 
         {/* Mission Section */}
         <section className="mb-20">
