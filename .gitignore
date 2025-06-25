@@ -3,6 +3,10 @@ venv/
 backend/venv/
 .env/
 
+backend/uploaded_brain_mri
+backend/uploaded_mri 
+
+
 
 
 # Byte-compiled / optimized / DLL files
