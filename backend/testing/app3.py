@@ -89,3 +89,6 @@ if submitted:
 
     st.success(f"Prediction for *{name}* at *{hospital}* on {timestamp}")
     st.markdown(f"### Result using *{model_name}*: {result}")
+
+
+    

@@ -1,34 +1,19 @@
-
 import { History, Calendar, Brain, Heart, Droplets, FileText, Download } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
 import { usePredictions } from '@/hooks/usePredictions';
 import { useNavigate } from 'react-router-dom';
+import { log } from 'console';
 
 const HistoryPage = () => {
-  const { user, loading: authLoading } = useAuth();
-  const { data: predictions = [], isLoading, error } = usePredictions();
   const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+  const { data: predictions = [], isLoading, error } = usePredictions();
 
-  // Show loading state while checking authentication
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-20 h-20 bg-gradient-to-r from-medical-blue to-medical-purple rounded-full flex items-center justify-center shadow-xl mx-auto mb-4 animate-pulse">
-            <History className="w-10 h-10 text-white" />
-          </div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect to login if not authenticated
-  if (!user) {
+  // If no token, show login prompt
+  if (!token) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -54,40 +39,31 @@ const HistoryPage = () => {
 
   const getIconForDisease = (diseaseType: string) => {
     switch (diseaseType) {
-      case 'heart_disease':
-        return Heart;
+      case 'heart_disease': return Heart;
       case 'brain_tumor':
-      case 'alzheimer':
-        return Brain;
-      case 'kidney_disease':
-        return Droplets;
-      default:
-        return FileText;
+      case 'alzheimer': return Brain;
+      case 'kidney_disease': return Droplets;
+      default: return FileText;
     }
   };
 
   const getColorForDisease = (diseaseType: string) => {
     switch (diseaseType) {
-      case 'heart_disease':
-        return 'from-red-500 to-pink-600';
+      case 'heart_disease': return 'from-red-500 to-pink-600';
       case 'brain_tumor':
-      case 'alzheimer':
-        return 'from-purple-500 to-pink-600';
-      case 'kidney_disease':
-        return 'from-green-500 to-teal-600';
-      default:
-        return 'from-blue-500 to-purple-600';
+      case 'alzheimer': return 'from-purple-500 to-pink-600';
+      case 'kidney_disease': return 'from-green-500 to-teal-600';
+      default: return 'from-blue-500 to-purple-600';
     }
   };
 
   const formatDiseaseName = (diseaseType: string) => {
-    return diseaseType.split('_').map(word => 
+    return diseaseType.split('_').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
   };
 
   const getStatusBadge = (prediction: any) => {
-    // This is a simplified version - you'll want to customize based on your prediction format
     const result = prediction.prediction_result?.result || 'Unknown';
     if (result.toLowerCase().includes('negative') || result.toLowerCase().includes('normal') || result.toLowerCase().includes('no')) {
       return { color: 'bg-green-100 text-green-800', text: 'Normal' };
@@ -100,10 +76,9 @@ const HistoryPage = () => {
 
   const handleExportReport = (record: any) => {
     console.log('Exporting report for:', record);
-    // TODO: Implement PDF export functionality
+    // TODO: Add export to PDF logic
   };
 
-  // Show loading state while fetching predictions
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
@@ -117,7 +92,6 @@ const HistoryPage = () => {
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-24">
@@ -142,25 +116,23 @@ const HistoryPage = () => {
               <History className="w-10 h-10 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Your Prediction History
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Your Prediction History</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             View and manage all your previous medical predictions and reports
           </p>
         </div>
 
-        {/* Statistics Cards */}
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           {[
             { label: 'Total Predictions', value: predictions.length.toString(), icon: FileText, color: 'from-blue-500 to-purple-600' },
             { label: 'This Month', value: predictions.filter(p => new Date(p.created_at).getMonth() === new Date().getMonth()).length.toString(), icon: Calendar, color: 'from-green-500 to-teal-600' },
             { label: 'Heart Checks', value: predictions.filter(p => p.disease_type === 'heart_disease').length.toString(), icon: Heart, color: 'from-red-500 to-pink-600' },
-            { label: 'Brain Scans', value: predictions.filter(p => p.disease_type === 'brain_tumor' || p.disease_type === 'alzheimer').length.toString(), icon: Brain, color: 'from-purple-500 to-indigo-600' }
-          ].map((stat, index) => {
+            { label: 'Brain Scans', value: predictions.filter(p => ['brain_tumor', 'alzheimer'].includes(p.disease_type)).length.toString(), icon: Brain, color: 'from-purple-500 to-indigo-600' }
+          ].map((stat, i) => {
             const Icon = stat.icon;
             return (
-              <Card key={index} className="border-0 shadow-lg bg-white hover:shadow-xl transition-shadow">
+              <Card key={i} className="border-0 shadow-lg bg-white hover:shadow-xl transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -192,33 +164,20 @@ const HistoryPage = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No predictions yet</h3>
                 <p className="text-gray-600 mb-6">Start by using one of our AI-powered medical prediction tools.</p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <Button onClick={() => navigate('/heart')} variant="outline" size="sm">
-                    <Heart className="w-4 h-4 mr-2" />
-                    Heart Disease
-                  </Button>
-                  <Button onClick={() => navigate('/brain')} variant="outline" size="sm">
-                    <Brain className="w-4 h-4 mr-2" />
-                    Brain Tumor
-                  </Button>
-                  <Button onClick={() => navigate('/alzheimer')} variant="outline" size="sm">
-                    <Brain className="w-4 h-4 mr-2" />
-                    Alzheimer
-                  </Button>
-                  <Button onClick={() => navigate('/kidney')} variant="outline" size="sm">
-                    <Droplets className="w-4 h-4 mr-2" />
-                    Kidney Disease
-                  </Button>
+                  <Button onClick={() => navigate('/heart')} variant="outline" size="sm"><Heart className="w-4 h-4 mr-2" />Heart Disease</Button>
+                  <Button onClick={() => navigate('/brain')} variant="outline" size="sm"><Brain className="w-4 h-4 mr-2" />Brain Tumor</Button>
+                  <Button onClick={() => navigate('/alzheimer')} variant="outline" size="sm"><Brain className="w-4 h-4 mr-2" />Alzheimer</Button>
+                  <Button onClick={() => navigate('/kidney')} variant="outline" size="sm"><Droplets className="w-4 h-4 mr-2" />Kidney Disease</Button>
                 </div>
               </div>
             ) : (
               <div className="space-y-6">
-                {predictions.map((prediction) => {
-                  const Icon = getIconForDisease(prediction.disease_type);
-                  const colorClass = getColorForDisease(prediction.disease_type);
-                  const statusBadge = getStatusBadge(prediction);
-                  
+                {predictions.map(pred => {
+                  const Icon = getIconForDisease(pred.disease_type);
+                  const colorClass = getColorForDisease(pred.disease_type);
+                  const statusBadge = getStatusBadge(pred);
                   return (
-                    <div key={prediction.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow bg-white">
+                    <div key={pred.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md bg-white">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-4">
                           <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${colorClass} flex items-center justify-center`}>
@@ -226,60 +185,34 @@ const HistoryPage = () => {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
-                              <h3 className="text-lg font-semibold text-gray-900">
-                                {formatDiseaseName(prediction.disease_type)}
-                              </h3>
-                              <Badge className={statusBadge.color}>
-                                {statusBadge.text}
-                              </Badge>
+                              <h3 className="text-lg font-semibold text-gray-900">{formatDiseaseName(pred.disease_type)}</h3>
+                              <Badge className={statusBadge.color}>{statusBadge.text}</Badge>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                              <div className="flex items-center space-x-2">
-                                <Calendar className="w-4 h-4" />
-                                <span>{new Date(prediction.created_at).toLocaleDateString()} at {new Date(prediction.created_at).toLocaleTimeString()}</span>
-                              </div>
-                              <div>
-                                <span className="font-semibold">Result:</span> {prediction.prediction_result?.result || 'Processing'}
-                              </div>
-                              <div>
-                                <span className="font-semibold">Confidence:</span> {prediction.confidence_score ? `${Math.round(prediction.confidence_score)}%` : 'N/A'}
-                              </div>
+                              <div className="flex items-center space-x-2"><Calendar className="w-4 h-4" /><span>{new Date(pred.created_at).toLocaleDateString()} at {new Date(pred.created_at).toLocaleTimeString()}</span></div>
+                              <div><span className="font-semibold">Result:</span> {pred.prediction_result?.result || 'Processing'}</div>
+                              <div><span className="font-semibold">Confidence:</span> {pred.confidence_score ? `${Math.round(pred.confidence_score)}%` : 'N/A'}</div>
                             </div>
-                            <div className="mt-3">
-                              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                                <span>Input Type:</span>
-                                <Badge variant="outline">
-                                  {prediction.image_url ? 'Medical Image' : 'Health Parameters'}
-                                </Badge>
-                              </div>
+                            <div className="mt-3 flex items-center space-x-2 text-sm text-gray-500">
+                              <span>Input Type:</span>
+                              <Badge variant="outline">{pred.image_url ? 'Medical Image' : 'Health Parameters'}</Badge>
                             </div>
                           </div>
                         </div>
-                        <div className="flex flex-col space-y-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleExportReport(prediction)}
-                            className="flex items-center space-x-2"
-                          >
-                            <Download className="w-4 h-4" />
-                            <span>Export</span>
+                        <div>
+                          <Button onClick={() => handleExportReport(pred)} variant="outline" size="sm" className="flex items-center space-x-2">
+                            <Download className="w-4 h-4" /><span>Export</span>
                           </Button>
                         </div>
                       </div>
-                      
-                      {/* Confidence Bar */}
-                      {prediction.confidence_score && (
+                      {pred.confidence_score && (
                         <div className="mt-4">
                           <div className="flex justify-between text-sm text-gray-600 mb-1">
                             <span>Prediction Confidence</span>
-                            <span>{Math.round(prediction.confidence_score)}%</span>
+                            <span>{Math.round(pred.confidence_score)}%</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className={`bg-gradient-to-r ${colorClass} h-2 rounded-full transition-all duration-500`}
-                              style={{ width: `${prediction.confidence_score}%` }}
-                            ></div>
+                            <div className={`bg-gradient-to-r ${colorClass} h-2 rounded-full`} style={{ width: `${pred.confidence_score}%` }}></div>
                           </div>
                         </div>
                       )}
@@ -291,11 +224,10 @@ const HistoryPage = () => {
           </CardContent>
         </Card>
 
-        {/* Medical Disclaimer */}
+        {/* Disclaimer */}
         <Alert className="mt-8 bg-yellow-50 border-yellow-200">
           <AlertDescription className="text-yellow-800">
-            <strong>Medical Disclaimer:</strong> All predictions are for screening purposes only and should not replace professional medical consultation. 
-            Please consult with qualified healthcare professionals for proper diagnosis and treatment.
+            <strong>Medical Disclaimer:</strong> All predictions are for screening purposes only and should not replace professional medical consultation.
           </AlertDescription>
         </Alert>
       </div>

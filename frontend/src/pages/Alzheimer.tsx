@@ -1,5 +1,5 @@
-
 import { useState } from 'react';
+import axios from 'axios';
 import { Brain, Upload, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,42 +22,59 @@ const Alzheimer = () => {
         setConfidence(null);
       } else {
         toast({
-          title: "Invalid file type",
-          description: "Please upload an image file (JPG, PNG, etc.)",
-          variant: "destructive",
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPG, PNG, etc.)',
+          variant: 'destructive',
         });
       }
     }
   };
 
-  const handlePredict = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "No file selected",
-        description: "Please upload an MRI scan image first",
-        variant: "destructive",
-      });
-      return;
-    }
+const handlePredict = async () => {
+  if (!selectedFile) {
+    toast({
+      title: 'No file selected',
+      description: 'Please upload an MRI scan image first',
+      variant: 'destructive',
+    });
+    return;
+  }
 
-    setIsAnalyzing(true);
-    
-    // Simulate API call - Replace with actual ML model integration
-    setTimeout(() => {
-      const predictions = ['No Dementia', 'Very Mild Dementia', 'Mild Dementia', 'Moderate Dementia'];
-      const randomResult = predictions[Math.floor(Math.random() * predictions.length)];
-      const randomConfidence = Math.floor(Math.random() * 20) + 80; // 80-99% confidence
-      
-      setResult(randomResult);
-      setConfidence(randomConfidence);
-      setIsAnalyzing(false);
-      
-      toast({
-        title: "Analysis Complete",
-        description: `Prediction: ${randomResult} (${randomConfidence}% confidence)`,
-      });
-    }, 3000);
-  };
+  setIsAnalyzing(true);
+
+  try {
+    const token = localStorage.getItem('token'); // assuming token is stored here
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    const response = await axios.post('http://127.0.0.1:8000/upload-mri', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      },
+    });
+
+    const { prediction: predictedResult, confidence: predictedConfidence } = response.data;
+
+    setResult(predictedResult);
+    setConfidence(predictedConfidence);
+
+    toast({
+      title: 'Analysis Complete',
+      description: `Prediction: ${predictedResult} (${predictedConfidence}% confidence)`,
+    });
+  } catch (error: any) {
+    toast({
+      title: 'Upload failed',
+      description: error.response?.data?.detail || 'Something went wrong',
+      variant: 'destructive',
+    });
+  } finally {
+    setIsAnalyzing(false);
+  }
+};
+
 
   const getSeverityColor = (result: string) => {
     if (result.includes('No Dementia')) return 'text-green-600 bg-green-50';
@@ -69,7 +86,6 @@ const Alzheimer = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-50 py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
             <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-xl">
@@ -154,14 +170,14 @@ const Alzheimer = () => {
                     <h3 className="font-semibold text-lg mb-2">Prediction Result:</h3>
                     <p className="text-xl font-bold">{result}</p>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Confidence Level:</span>
                       <span className="font-semibold">{confidence}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-1000"
                         style={{ width: `${confidence}%` }}
                       ></div>
@@ -185,7 +201,7 @@ const Alzheimer = () => {
           </Card>
         </div>
 
-        {/* Information Section */}
+        {/* Info Section */}
         <Card className="mt-8 border-0 shadow-xl bg-gradient-to-r from-blue-50 to-purple-50">
           <CardContent className="p-8">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Understanding Alzheimer's Stages</h3>

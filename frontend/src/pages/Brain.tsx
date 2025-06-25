@@ -1,5 +1,5 @@
-
 import { useState } from 'react';
+import axios from 'axios';
 import { Brain, Upload, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,34 +54,51 @@ const BrainTumor = () => {
     }
   };
 
-  const handlePredict = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "No file selected",
-        description: "Please upload a brain MRI scan first",
-        variant: "destructive",
-      });
-      return;
-    }
+const handlePredict = async () => {
+  if (!selectedFile) {
+    toast({
+      title: "No file selected",
+      description: "Please upload a brain MRI scan first",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    setIsAnalyzing(true);
-    
-    // Simulate API call - Replace with actual ML model integration
-    setTimeout(() => {
-      const tumorTypesList = Object.keys(tumorTypes);
-      const randomResult = tumorTypesList[Math.floor(Math.random() * tumorTypesList.length)];
-      const randomConfidence = Math.floor(Math.random() * 15) + 85; // 85-99% confidence
-      
-      setResult(randomResult);
-      setConfidence(randomConfidence);
-      setIsAnalyzing(false);
-      
-      toast({
-        title: "Analysis Complete",
-        description: `Detection: ${randomResult} (${randomConfidence}% confidence)`,
-      });
-    }, 3000);
-  };
+  setIsAnalyzing(true);
+
+  try {
+    const token = localStorage.getItem("token"); // assuming token is stored in localStorage
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    const response = await axios.post("http://127.0.0.1:8000/upload-brain-mri", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const { tumor_type: predictedResult, confidence: predictedConfidence } = response.data;
+
+    setResult(predictedResult);
+    setConfidence(predictedConfidence);
+
+    toast({
+      title: "Analysis Complete",
+      description: `Detected: ${predictedResult} (${predictedConfidence}% confidence)`,
+    });
+
+  } catch (error: any) {
+    toast({
+      title: "Upload failed",
+      description: error?.response?.data?.detail || "Something went wrong during classification.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsAnalyzing(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 py-12">
@@ -179,14 +196,14 @@ const BrainTumor = () => {
                       {tumorTypes[result as keyof typeof tumorTypes].description}
                     </p>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Confidence Level:</span>
                       <span className="font-semibold">{confidence}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-purple-500 to-pink-600 h-2 rounded-full transition-all duration-1000"
                         style={{ width: `${confidence}%` }}
                       ></div>
@@ -210,7 +227,7 @@ const BrainTumor = () => {
           </Card>
         </div>
 
-        {/* Information Section */}
+        {/* Info Section */}
         <Card className="mt-8 border-0 shadow-xl bg-gradient-to-r from-purple-50 to-pink-50">
           <CardContent className="p-8">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Brain Tumor Types</h3>
@@ -225,7 +242,7 @@ const BrainTumor = () => {
                 </div>
               ))}
             </div>
-            
+
             <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-2">How It Works</h4>
               <p className="text-blue-800 text-sm">

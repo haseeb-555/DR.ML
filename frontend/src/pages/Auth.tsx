@@ -1,8 +1,13 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import axios from 'axios';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,16 +23,9 @@ const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  const { signIn, signUp, user } = useAuth();
+
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // Redirect if already logged in
-  if (user) {
-    navigate('/');
-    return null;
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,30 +33,42 @@ const AuthPage = () => {
     setError('');
 
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) {
-          setError(error.message);
+      const url = isLogin
+        ? 'http://127.0.0.1:8000/login'
+        : 'http://127.0.0.1:8000/register';
+
+      const payload = isLogin
+        ? { email, password }
+        : { email, password, full_name: fullName };
+
+      const { data, status } = await axios.post(url, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (status >= 200 && status < 300) {
+        if (isLogin) {
+          toast({
+            title: 'Welcome back!',
+            description: 'You have successfully signed in.',
+          });
+          localStorage.setItem('token', data.access_token); // match backend key
+          navigate('/');
         } else {
           toast({
-            title: "Welcome back!",
-            description: "You have successfully signed in.",
+            title: 'Account created!',
+            description: 'Please check your email to verify your account.',
           });
-          navigate('/');
+          setIsLogin(true);
         }
       } else {
-        const { error } = await signUp(email, password, fullName);
-        if (error) {
-          setError(error.message);
-        } else {
-          toast({
-            title: "Account created!",
-            description: "Please check your email to verify your account.",
-          });
-        }
+        setError(data.detail || 'Login/Register failed');
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
+    } catch (err: any) {
+      if (err.response) {
+        setError(err.response.data.detail || 'Authentication failed');
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
@@ -84,10 +94,9 @@ const AuthPage = () => {
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </CardTitle>
             <CardDescription>
-              {isLogin 
-                ? 'Sign in to access your medical predictions' 
-                : 'Sign up to start using AI-powered medical predictions'
-              }
+              {isLogin
+                ? 'Sign in to access your medical predictions'
+                : 'Sign up to start using AI-powered medical predictions'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -101,11 +110,11 @@ const AuthPage = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Enter your full name"
-                    required={!isLogin}
+                    required
                   />
                 </div>
               )}
-              
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -117,7 +126,7 @@ const AuthPage = () => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -159,13 +168,15 @@ const AuthPage = () => {
                 className="w-full bg-gradient-to-r from-medical-blue to-medical-purple"
                 disabled={loading}
               >
-                {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Sign Up')}
+                {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                {isLogin ? "Don't have an account?" : "Already have an account?"}
+                {isLogin
+                  ? "Don't have an account?"
+                  : 'Already have an account?'}
               </p>
               <Button
                 variant="link"

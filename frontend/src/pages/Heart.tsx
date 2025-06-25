@@ -1,5 +1,5 @@
-
 import { useState } from 'react';
+import axios from 'axios';
 import { Heart, Activity, AlertCircle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +26,7 @@ const HeartDisease = () => {
     ca: '',
     thal: ''
   });
-  
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number | null>(null);
@@ -55,31 +55,53 @@ const HeartDisease = () => {
       return;
     }
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast({
+        title: "Not Authenticated",
+        description: "Please login to make a prediction",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
-    
-    // Simulate API call - Replace with actual ML model integration
-    setTimeout(() => {
-      const predictions = ['Negative', 'Positive'];
-      const randomResult = predictions[Math.floor(Math.random() * predictions.length)];
-      const randomConfidence = Math.floor(Math.random() * 20) + 75; // 75-94% confidence
-      
-      setResult(randomResult);
-      setConfidence(randomConfidence);
-      setIsAnalyzing(false);
-      
+
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/predict-heart", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const { result, confidence } = response.data;
+
+      setResult(result);
+      setConfidence(confidence);
+
       toast({
         title: "Analysis Complete",
-        description: `Heart Disease Risk: ${randomResult} (${randomConfidence}% confidence)`,
+        description: `Heart Disease Risk: ${result} (${confidence}% confidence)`,
       });
-    }, 3000);
+    } catch (error: any) {
+      toast({
+        title: "Prediction Failed",
+        description: error?.response?.data?.detail || "An error occurred during prediction",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
+
 
   const formFields = [
     { key: 'age', label: 'Age', type: 'number', placeholder: 'Enter age in years' },
     { key: 'trestbps', label: 'Resting Blood Pressure', type: 'number', placeholder: 'mm Hg' },
     { key: 'chol', label: 'Serum Cholesterol', type: 'number', placeholder: 'mg/dl' },
-    { key: 'thalach', label: 'Maximum Heart Rate', type: 'number', placeholder: 'Beats per minute' },
-    { key: 'oldpeak', label: 'ST Depression', type: 'number', placeholder: 'Exercise induced', step: '0.1' }
+    { key: 'thalach', label: 'Maximum Heart Rate', type: 'number', placeholder: 'BPM' },
+    { key: 'oldpeak', label: 'ST Depression', type: 'number', placeholder: '0.0', step: '0.1' },
   ];
 
   const selectFields = [
@@ -168,16 +190,13 @@ const HeartDisease = () => {
               <Heart className="w-10 h-10 text-white animate-heartbeat" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Heart Disease Predictor
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Heart Disease Predictor</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Enter your cardiovascular health parameters to assess heart disease risk using our machine learning model
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form Section */}
           <div className="lg:col-span-2">
             <Card className="border-0 shadow-xl">
               <CardHeader>
@@ -185,12 +204,9 @@ const HeartDisease = () => {
                   <Activity className="w-5 h-5 text-red-600" />
                   <span>Health Parameters</span>
                 </CardTitle>
-                <CardDescription>
-                  Fill in your cardiovascular health information
-                </CardDescription>
+                <CardDescription>Fill in your cardiovascular health information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Number Input Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {formFields.map((field) => (
                     <div key={field.key} className="space-y-2">
@@ -208,7 +224,6 @@ const HeartDisease = () => {
                   ))}
                 </div>
 
-                {/* Select Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {selectFields.map((field) => (
                     <div key={field.key} className="space-y-2">
@@ -250,7 +265,6 @@ const HeartDisease = () => {
             </Card>
           </div>
 
-          {/* Results Section */}
           <div className="lg:col-span-1">
             <Card className="border-0 shadow-xl sticky top-8">
               <CardHeader>
@@ -258,24 +272,18 @@ const HeartDisease = () => {
                   <TrendingUp className="w-5 h-5 text-pink-600" />
                   <span>Risk Assessment</span>
                 </CardTitle>
-                <CardDescription>
-                  Heart disease prediction results
-                </CardDescription>
+                <CardDescription>Heart disease prediction results</CardDescription>
               </CardHeader>
               <CardContent>
                 {result ? (
                   <div className="space-y-6">
                     <div className={`p-4 rounded-lg ${
-                      result === 'Positive' 
-                        ? 'bg-red-50 border-2 border-red-200' 
-                        : 'bg-green-50 border-2 border-green-200'
+                      result === 'Positive' ? 'bg-red-50 border-2 border-red-200' : 'bg-green-50 border-2 border-green-200'
                     }`}>
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-semibold">Risk Status:</h3>
                         <Badge className={
-                          result === 'Positive' 
-                            ? 'bg-red-100 text-red-800' 
-                            : 'bg-green-100 text-green-800'
+                          result === 'Positive' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                         }>
                           {result === 'Positive' ? 'High Risk' : 'Low Risk'}
                         </Badge>
@@ -286,7 +294,7 @@ const HeartDisease = () => {
                         {result === 'Positive' ? 'Heart Disease Detected' : 'No Heart Disease Detected'}
                       </p>
                     </div>
-                    
+
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Confidence:</span>
