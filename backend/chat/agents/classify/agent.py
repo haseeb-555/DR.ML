@@ -13,7 +13,8 @@ MODEL = os.getenv("MODEL")
 
 
 from google.adk.agents.llm_agent import LlmAgent
-from prompt import PROMPT
+
+from agents.classify.prompt import PROMPT
 
 root_agent = LlmAgent(
     name="classifier_agent",

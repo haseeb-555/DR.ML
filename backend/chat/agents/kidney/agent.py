@@ -9,7 +9,7 @@ MODEL = os.getenv("MODEL")
 
 from google.adk.agents.llm_agent import LlmAgent
 
-from prompt import PROMPT1
+from agents.kidney.prompt import PROMPT1
 
 # Define the CKD agent
 root_agent = LlmAgent(

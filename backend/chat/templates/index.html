@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>DR.ML Medical Chatbot</title>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        background-color: #f7f8fc;
+      }
+      h1 {
+        text-align: center;
+        color: #3a3a3a;
+      }
+      #chat-box {
+        max-width: 700px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      #messages {
+        margin-bottom: 15px;
+      }
+      .user,
+      .bot {
+        margin-bottom: 10px;
+      }
+      .user {
+        text-align: right;
+        color: #007acc;
+      }
+      .bot {
+        text-align: left;
+        color: #444;
+      }
+      input[type="text"] {
+        width: 80%;
+        padding: 10px;
+      }
+      button {
+        padding: 10px 15px;
+        margin-left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🩺 DR.ML Medical Chatbot</h1>
+    <div id="chat-box">
+      <div id="messages"></div>
+      <input type="text" id="query" placeholder="Ask a medical question..." />
+      <button onclick="sendQuery()">Send</button>
+    </div>
+
+    <script>
+      async function sendQuery() {
+        const input = document.getElementById("query");
+        const messages = document.getElementById("messages");
+        const query = input.value.trim();
+        if (!query) return;
+
+        messages.innerHTML += `<div class="user"><strong>You:</strong> ${query}</div>`;
+        input.value = "";
+
+        const response = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query }),
+        });
+
+        const data = await response.json();
+        messages.innerHTML += `<div class="bot"><strong>DR.ML [${data.label}]:</strong> ${data.response}</div>`;
+        messages.scrollTop = messages.scrollHeight;
+      }
+    </script>
+  </body>
+</html>
