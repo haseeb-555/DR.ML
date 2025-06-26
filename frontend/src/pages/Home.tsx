@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Heart, Brain, Droplets, ArrowRight, Stethoscope, Activity, Shield, Zap, Users, Star, CheckCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Heart, Brain, Droplets, ArrowRight, Stethoscope, Activity, Shield, Zap, Users, Star, CheckCircle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Home = () => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const diseases = [
     {
@@ -74,6 +83,16 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [testimonials.length]);
 
+  const handleStartAnalysis = () => {
+    if (!user) {
+      navigate('/auth');
+    }
+  };
+
+  const handleDiseaseSelection = (path: string) => {
+    navigate(path);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 relative overflow-hidden">
       {/* Medical background elements */}
@@ -115,13 +134,51 @@ const Home = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white px-8 py-4 text-lg rounded-full shadow-lg">
-                Start Analysis
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-              <Button variant="outline" size="lg" className="px-8 py-4 text-lg rounded-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50">
-                Learn More
-              </Button>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="lg" className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white px-8 py-4 text-lg rounded-full shadow-lg">
+                      Start Analysis
+                      <ChevronDown className="ml-2 w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl p-2">
+                    {diseases.map((disease) => {
+                      const Icon = disease.icon;
+                      return (
+                        <DropdownMenuItem
+                          key={disease.name}
+                          onClick={() => handleDiseaseSelection(disease.path)}
+                          className="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
+                        >
+                          <div className={`w-8 h-8 rounded-lg ${disease.gradient} flex items-center justify-center`}>
+                            <Icon className="w-4 h-4 text-white" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">{disease.name}</div>
+                            <div className="text-sm text-gray-500">{disease.accuracy} accuracy</div>
+                          </div>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button 
+                  size="lg" 
+                  onClick={handleStartAnalysis}
+                  className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white px-8 py-4 text-lg rounded-full shadow-lg"
+                >
+                  Start Analysis
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              )}
+              
+              <Link to="/about">
+                <Button variant="outline" size="lg" className="px-8 py-4 text-lg rounded-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50">
+                  Learn More
+                </Button>
+              </Link>
             </div>
           </div>
 
@@ -136,7 +193,6 @@ const Home = () => {
                 stroke="currentColor" 
                 strokeWidth="3"
               >
-                {/* Stethoscope tubing path */}
                 <path 
                   d="M120 50 Q80 80 80 120 Q80 160 120 190 Q160 220 200 220 Q240 220 280 190 Q320 160 320 120 Q320 80 280 50"
                   className="animate-pulse"
@@ -150,15 +206,12 @@ const Home = () => {
                   className="animate-pulse"
                 />
                 
-                {/* Earpieces */}
                 <circle cx="60" cy="80" r="8" fill="currentColor" className="opacity-60" />
                 <circle cx="340" cy="80" r="8" fill="currentColor" className="opacity-60" />
                 
-                {/* Chest piece */}
                 <circle cx="200" cy="420" r="25" fill="none" stroke="currentColor" strokeWidth="4" className="opacity-80" />
                 <circle cx="200" cy="420" r="15" fill="currentColor" className="opacity-40" />
                 
-                {/* Connecting tube */}
                 <path 
                   d="M200 220 Q200 280 200 395"
                   strokeWidth="6"
@@ -168,7 +221,6 @@ const Home = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-6 relative z-10">
-              {/* Departments Card */}
               <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-3xl p-6 hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-gray-900">Departments</h3>
@@ -192,7 +244,6 @@ const Home = () => {
                 </div>
               </Card>
 
-              {/* Stats Card */}
               <Card className="bg-gradient-to-r from-blue-600 to-teal-600 text-white border-0 shadow-xl rounded-3xl p-6 hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold">AI Accuracy</h3>
@@ -254,7 +305,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Info Cards Section */}
       <section className="py-24 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -294,7 +344,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
       <section className="py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-16">What Medical Professionals Say</h2>
@@ -334,3 +383,4 @@ const Home = () => {
 };
 
 export default Home;
+
