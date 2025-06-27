@@ -69,6 +69,7 @@ async def classify_query(query: str) -> str:
 
             print("Classification Session State:", session.state)
             print("session.state['disease_class']:", session.state.get("disease_class"))
+            label = session.state.get("disease_class")
 
             return label
 

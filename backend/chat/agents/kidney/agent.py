@@ -9,7 +9,7 @@ MODEL = os.getenv("MODEL")
 
 from google.adk.agents.llm_agent import LlmAgent
 
-from agents.kidney.prompt import PROMPT1
+from agents.kidney.prompt import PROMPT1, PROMPT2
 
 # Define the CKD agent
 root_agent = LlmAgent(
@@ -21,4 +21,17 @@ root_agent = LlmAgent(
     instruction=PROMPT1,
     model=MODEL,
     output_key="kidney_bot_response",
+)
+
+
+report_agent = LlmAgent(
+    name="kidney_report_agent",
+    description=(
+        "This agent analyzes kidney disease prediction results along with user-provided medical inputs. "
+        "It generates an informative, compassionate, and actionable health report, helping users understand "
+        "their results, risks, and next steps for CKD management or prevention."
+    ),
+    instruction=PROMPT2,
+    model=MODEL,
+    output_key="kidney_report_response",
 )

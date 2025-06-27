@@ -12,7 +12,7 @@ load_dotenv(dotenv_path=env_path)
 MODEL = os.getenv("MODEL")
 
 from google.adk.agents.llm_agent import LlmAgent
-from agents.heart.prompt import PROMPT1
+from agents.heart.prompt import PROMPT1, PROMPT2
 
 root_agent = LlmAgent(
     name="heart_bot_agent",
@@ -22,4 +22,15 @@ root_agent = LlmAgent(
     instruction=PROMPT1,
     model=MODEL,
     output_key="heart_bot_response",
+)
+
+report_agent = LlmAgent(
+    name="heart_report_agent",
+    description=(
+        "This agent interprets AI-based predictions of heart disease. It generates a personalized health report "
+        "based on whether heart disease was detected and with what confidence, then offers appropriate medical advice."
+    ),
+    instruction=PROMPT2,
+    model=MODEL,
+    output_key="heart_report_response",
 )

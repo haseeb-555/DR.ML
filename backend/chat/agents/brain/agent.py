@@ -12,7 +12,7 @@ load_dotenv(dotenv_path=env_path)
 MODEL = os.getenv("MODEL")
 
 from google.adk.agents.llm_agent import LlmAgent
-from agents.brain.prompt import PROMPT1
+from agents.brain.prompt import PROMPT1, PROMPT2
 
 
 root_agent = LlmAgent(
@@ -23,4 +23,16 @@ root_agent = LlmAgent(
     instruction=PROMPT1,
     model=MODEL,
     output_key="brain_bot_response",
+)
+
+report_agent = LlmAgent(
+    name="brain_tumor_report_agent",
+    description=(
+        "This agent interprets the results from a brain tumor classification model. "
+        "It takes the predicted tumor type and confidence score, then generates a personalized report with precautions, "
+        "recommended actions, and supportive medical advice for the user."
+    ),
+    instruction=PROMPT2,
+    model=MODEL,
+    output_key="brain_tumor_report_response",
 )

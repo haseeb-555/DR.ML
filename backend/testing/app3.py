@@ -1,16 +1,20 @@
 import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
 from datetime import datetime
+
 from backend.preprocessing.kidney import (
     preprocess_input,
     get_model_names,
     load_model_by_name,
 )
 
+# Page configuration
 st.set_page_config(page_title="Kidney Disease Predictor", layout="centered")
-
 st.title("🧪 Kidney Disease Prediction App")
 st.markdown("Fill out the patient's details and lab report to get a prediction.")
 
+# Form UI
 with st.form("kidney_form"):
     name = st.text_input("Patient Name")
     hospital = st.text_input("Hospital Name")
@@ -48,7 +52,9 @@ with st.form("kidney_form"):
 
     submitted = st.form_submit_button("Submit & Predict")
 
+# Handle prediction logic
 if submitted:
+    # Collect and preprocess input
     user_input = {
         "age": age,
         "blood_pressure": blood_pressure,
@@ -78,14 +84,37 @@ if submitted:
 
     X_input = preprocess_input(user_input)
     model = load_model_by_name(model_name)
-    prediction = model.predict(X_input)[0]
 
+    # Predict and get probabilities if available
+    if hasattr(model, "predict_proba"):
+        proba = model.predict_proba(X_input)[0]
+        prediction = int(np.argmax(proba))
+        confidence = proba[prediction]
+    else:
+        prediction = model.predict(X_input)[0]
+        proba = None
+        confidence = None
+
+    # Final result
     result = (
-        "Chronic Kidney Disease Detected ❗"
+        "❗ Chronic Kidney Disease Detected"
         if prediction == 0
-        else "No CKD Detected ✅"
+        else "✅ No Chronic Kidney Disease Detected"
     )
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    st.success(f"Prediction for *{name}* at *{hospital}* on {timestamp}")
-    st.markdown(f"### Result using *{model_name}*: {result}")
+    # Display
+    st.success(f"Prediction for **{name}** at **{hospital}** on `{timestamp}`")
+    st.markdown(f"### Result using **{model_name}**:\n{result}")
+
+    if confidence is not None:
+        st.markdown(f"#### 🔎 Confidence Score: `{confidence:.2f}`")
+
+    if proba is not None:
+        st.write("### 📊 Probability Distribution:")
+        fig, ax = plt.subplots()
+        ax.bar(["CKD", "Not CKD"], proba, color=["crimson", "green"])
+        ax.set_ylim(0, 1)
+        for i, score in enumerate(proba):
+            ax.text(i, score + 0.02, f"{score:.2f}", ha="center", fontsize=10)
+        st.pyplot(fig)

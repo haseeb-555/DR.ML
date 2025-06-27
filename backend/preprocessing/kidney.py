@@ -1,48 +1,48 @@
 import pandas as pd
-import numpy as np
 import joblib
+import numpy as np
 
-# Load all models from kidney.joblib
+# Load all trained models
 all_models = joblib.load("backend/models/kidney.joblib")
 
 
 def get_model_names():
+    """Return a list of available model names."""
     return list(all_models.keys())
 
 
 def load_model_by_name(name):
+    """Load model by its name from the joblib file."""
     return all_models.get(name)
 
 
 def preprocess_input(user_input_dict):
+    """Preprocess input dictionary into model-ready DataFrame."""
     df = pd.DataFrame([user_input_dict])
 
-    # Convert numerical string fields
-    num_fields = [
+    # Convert numeric string fields
+    numeric_fields = [
         "packed_cell_volume",
         "white_blood_cell_count",
         "red_blood_cell_count",
     ]
-    for field in num_fields:
-        df[field] = pd.to_numeric(df[field], errors="coerce")
+    df[numeric_fields] = df[numeric_fields].apply(pd.to_numeric, errors="coerce")
 
-    # Label encoding for categorical fields
-    categorical_cols = [
-        "red_blood_cells",
-        "pus_cell",
-        "pus_cell_clumps",
-        "bacteria",
-        "hypertension",
-        "diabetes_mellitus",
-        "coronary_artery_disease",
-        "appetite",
-        "peda_edema",
-        "aanemia",
-    ]
-    from sklearn.preprocessing import LabelEncoder
+    # Fixed encoding for categorical fields (to avoid LabelEncoder issues)
+    mapping_dict = {
+        "red_blood_cells": {"normal": 0, "abnormal": 1},
+        "pus_cell": {"normal": 0, "abnormal": 1},
+        "pus_cell_clumps": {"notpresent": 0, "present": 1},
+        "bacteria": {"notpresent": 0, "present": 1},
+        "hypertension": {"no": 0, "yes": 1},
+        "diabetes_mellitus": {"no": 0, "yes": 1},
+        "coronary_artery_disease": {"no": 0, "yes": 1},
+        "appetite": {"poor": 0, "good": 1},
+        "peda_edema": {"no": 0, "yes": 1},
+        "aanemia": {"no": 0, "yes": 1},
+    }
 
-    le = LabelEncoder()
-    for col in categorical_cols:
-        df[col] = le.fit_transform(df[col].astype(str))
+    for col, mapping in mapping_dict.items():
+        df[col] = df[col].map(mapping).fillna(0).astype(int)
 
     return df
