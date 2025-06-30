@@ -6,6 +6,7 @@ from backend.preprocessing.kidney import (
     load_model_by_name,
 )
 
+
 st.set_page_config(page_title="Kidney Disease Predictor", layout="centered")
 
 st.title("🧪 Kidney Disease Prediction App")
@@ -91,4 +92,3 @@ if submitted:
     st.markdown(f"### Result using *{model_name}*: {result}")
 
 
-    
