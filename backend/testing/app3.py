@@ -104,11 +104,11 @@ if submitted:
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Display
-    st.success(f"Prediction for **{name}** at **{hospital}** on `{timestamp}`")
-    st.markdown(f"### Result using **{model_name}**:\n{result}")
+    st.success(f"Prediction for *{name}* at *{hospital}* on {timestamp}")
+    st.markdown(f"### Result using *{model_name}*:\n{result}")
 
     if confidence is not None:
-        st.markdown(f"#### 🔎 Confidence Score: `{confidence:.2f}`")
+        st.markdown(f"#### 🔎 Confidence Score: {confidence:.2f}")
 
     if proba is not None:
         st.write("### 📊 Probability Distribution:")
@@ -117,4 +117,4 @@ if submitted:
         ax.set_ylim(0, 1)
         for i, score in enumerate(proba):
             ax.text(i, score + 0.02, f"{score:.2f}", ha="center", fontsize=10)
-        st.pyplot(fig)
+        st.pyplot(fig)
