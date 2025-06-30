@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
-
 from backend.preprocessing.kidney import (
     preprocess_input,
     get_model_names,
