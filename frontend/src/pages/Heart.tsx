@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import axios from 'axios';
 import { Heart, Activity, AlertCircle, TrendingUp, User } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
 const HeartDisease = () => {
@@ -27,14 +29,19 @@ const HeartDisease = () => {
     thal: ''
   });
 
-  // Additional fields for enhanced LLM summary
+  // Enhanced additional fields for comprehensive LLM summary
   const [additionalInfo, setAdditionalInfo] = useState({
     patientName: '',
     hospitalName: '',
-    familyHistory: '',
+    familyHistoryHeartDisease: '',
     smokingStatus: '',
-    symptoms: '',
-    medications: ''
+    alcoholConsumption: '',
+    exerciseHabits: '',
+    dietaryHabits: '',
+    stressLevels: '',
+    currentMedications: '',
+    chronicConditions: '',
+    occupationalFactors: ''
   });
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -220,92 +227,189 @@ const HeartDisease = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {/* Patient Information Card */}
+            {/* Enhanced Patient Information Card */}
             <Card className="border-0 shadow-xl">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <User className="w-5 h-5 text-red-600" />
-                  <span>Patient Information</span>
+                  <span>Comprehensive Patient Information</span>
                 </CardTitle>
                 <CardDescription>
-                  Enter patient details and additional clinical information
+                  Provide detailed patient information for comprehensive cardiovascular risk assessment
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="patientName">Patient Name</Label>
-                    <Input
-                      id="patientName"
-                      placeholder="Enter patient's full name"
-                      value={additionalInfo.patientName}
-                      onChange={(e) => handleAdditionalInfoChange('patientName', e.target.value)}
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
-                    />
+              <CardContent className="space-y-6">
+                {/* Basic Information */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Basic Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="patientName">Patient Name</Label>
+                      <Input
+                        id="patientName"
+                        placeholder="Enter patient's full name"
+                        value={additionalInfo.patientName}
+                        onChange={(e) => handleAdditionalInfoChange('patientName', e.target.value)}
+                        className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="hospitalName">Hospital Name</Label>
+                      <Input
+                        id="hospitalName"
+                        placeholder="Name of the hospital"
+                        value={additionalInfo.hospitalName}
+                        onChange={(e) => handleAdditionalInfoChange('hospitalName', e.target.value)}
+                        className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hospitalName">Hospital Name</Label>
-                    <Input
-                      id="hospitalName"
-                      placeholder="Name of the hospital"
-                      value={additionalInfo.hospitalName}
-                      onChange={(e) => handleAdditionalInfoChange('hospitalName', e.target.value)}
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
-                    />
+                </div>
+
+                {/* Medical History & Risk Factors */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Medical History & Risk Factors</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="familyHistoryHeartDisease">Family History of Heart Disease</Label>
+                      <Select
+                        value={additionalInfo.familyHistoryHeartDisease}
+                        onValueChange={(value) => handleAdditionalInfoChange('familyHistoryHeartDisease', value)}
+                      >
+                        <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
+                          <SelectValue placeholder="Family history of heart disease?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No family history</SelectItem>
+                          <SelectItem value="parents">Parents</SelectItem>
+                          <SelectItem value="siblings">Siblings</SelectItem>
+                          <SelectItem value="grandparents">Grandparents</SelectItem>
+                          <SelectItem value="multiple">Multiple relatives</SelectItem>
+                          <SelectItem value="unknown">Unknown</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="smokingStatus">Smoking Status</Label>
+                      <Select
+                        value={additionalInfo.smokingStatus}
+                        onValueChange={(value) => handleAdditionalInfoChange('smokingStatus', value)}
+                      >
+                        <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
+                          <SelectValue placeholder="Select smoking status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="never">Never smoked</SelectItem>
+                          <SelectItem value="former">Former smoker</SelectItem>
+                          <SelectItem value="current">Current smoker</SelectItem>
+                          <SelectItem value="unknown">Unknown</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="alcoholConsumption">Alcohol Consumption</Label>
+                      <Select
+                        value={additionalInfo.alcoholConsumption}
+                        onValueChange={(value) => handleAdditionalInfoChange('alcoholConsumption', value)}
+                      >
+                        <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
+                          <SelectValue placeholder="Select alcohol consumption" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No alcohol consumption</SelectItem>
+                          <SelectItem value="light">Light (1-2 drinks/week)</SelectItem>
+                          <SelectItem value="moderate">Moderate (3-7 drinks/week)</SelectItem>
+                          <SelectItem value="heavy">Heavy (>7 drinks/week)</SelectItem>
+                          <SelectItem value="unknown">Unknown</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="exerciseHabits">Exercise Habits</Label>
+                      <Select
+                        value={additionalInfo.exerciseHabits}
+                        onValueChange={(value) => handleAdditionalInfoChange('exerciseHabits', value)}
+                      >
+                        <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
+                          <SelectValue placeholder="Select exercise habits" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sedentary">Sedentary lifestyle</SelectItem>
+                          <SelectItem value="light">Light exercise (1-2 times/week)</SelectItem>
+                          <SelectItem value="moderate">Moderate exercise (3-4 times/week)</SelectItem>
+                          <SelectItem value="active">Very active (5+ times/week)</SelectItem>
+                          <SelectItem value="unknown">Unknown</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="stressLevels">Stress Levels</Label>
+                      <Select
+                        value={additionalInfo.stressLevels}
+                        onValueChange={(value) => handleAdditionalInfoChange('stressLevels', value)}
+                      >
+                        <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
+                          <SelectValue placeholder="Select stress levels" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low stress</SelectItem>
+                          <SelectItem value="moderate">Moderate stress</SelectItem>
+                          <SelectItem value="high">High stress</SelectItem>
+                          <SelectItem value="severe">Severe stress</SelectItem>
+                          <SelectItem value="unknown">Unknown</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="occupationalFactors">Occupational Factors</Label>
+                      <Input
+                        id="occupationalFactors"
+                        placeholder="e.g., Sedentary work, Physical labor, High stress job"
+                        value={additionalInfo.occupationalFactors}
+                        onChange={(e) => handleAdditionalInfoChange('occupationalFactors', e.target.value)}
+                        className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="familyHistory">Family History</Label>
-                    <Select
-                      value={additionalInfo.familyHistory}
-                      onValueChange={(value) => handleAdditionalInfoChange('familyHistory', value)}
-                    >
-                      <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
-                        <SelectValue placeholder="Family history of heart disease?" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No family history</SelectItem>
-                        <SelectItem value="parents">Parents</SelectItem>
-                        <SelectItem value="siblings">Siblings</SelectItem>
-                        <SelectItem value="grandparents">Grandparents</SelectItem>
-                        <SelectItem value="multiple">Multiple relatives</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="smokingStatus">Smoking Status</Label>
-                    <Select
-                      value={additionalInfo.smokingStatus}
-                      onValueChange={(value) => handleAdditionalInfoChange('smokingStatus', value)}
-                    >
-                      <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
-                        <SelectValue placeholder="Select smoking status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="never">Never smoked</SelectItem>
-                        <SelectItem value="former">Former smoker</SelectItem>
-                        <SelectItem value="current">Current smoker</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="symptoms">Current Symptoms</Label>
-                    <Input
-                      id="symptoms"
-                      placeholder="Describe any current symptoms (e.g., chest pain, shortness of breath)"
-                      value={additionalInfo.symptoms}
-                      onChange={(e) => handleAdditionalInfoChange('symptoms', e.target.value)}
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="medications">Current Medications</Label>
-                    <Input
-                      id="medications"
-                      placeholder="List current medications (especially heart-related)"
-                      value={additionalInfo.medications}
-                      onChange={(e) => handleAdditionalInfoChange('medications', e.target.value)}
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
-                    />
+                </div>
+
+                {/* Lifestyle & Additional Information */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Lifestyle & Additional Information</h4>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="dietaryHabits">Dietary Habits</Label>
+                      <Textarea
+                        id="dietaryHabits"
+                        placeholder="Describe dietary patterns (e.g., Mediterranean diet, high sodium, low fiber, etc.)"
+                        value={additionalInfo.dietaryHabits}
+                        onChange={(e) => handleAdditionalInfoChange('dietaryHabits', e.target.value)}
+                        className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="chronicConditions">Other Chronic Conditions</Label>
+                      <Textarea
+                        id="chronicConditions"
+                        placeholder="List any chronic conditions (e.g., diabetes, hypertension, obesity, etc.)"
+                        value={additionalInfo.chronicConditions}
+                        onChange={(e) => handleAdditionalInfoChange('chronicConditions', e.target.value)}
+                        className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="currentMedications">Current Medications</Label>
+                      <Textarea
+                        id="currentMedications"
+                        placeholder="List current medications including dosages (especially heart-related medications)"
+                        value={additionalInfo.currentMedications}
+                        onChange={(e) => handleAdditionalInfoChange('currentMedications', e.target.value)}
+                        className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                        rows={2}
+                      />
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -316,7 +420,7 @@ const HeartDisease = () => {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Activity className="w-5 h-5 text-red-600" />
-                  <span>Health Parameters</span>
+                  <span>Cardiovascular Health Parameters</span>
                 </CardTitle>
                 <CardDescription>Fill in your cardiovascular health information</CardDescription>
               </CardHeader>
@@ -446,4 +550,5 @@ const HeartDisease = () => {
 };
 
 export default HeartDisease;
+
 

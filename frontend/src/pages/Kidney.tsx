@@ -525,3 +525,4 @@ const KidneyDisease = () => {
 };
 
 export default KidneyDisease;
+
