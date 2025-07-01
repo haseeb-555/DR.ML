@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { Heart, Activity, AlertCircle, TrendingUp } from 'lucide-react';
+import { Heart, Activity, AlertCircle, TrendingUp, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,16 @@ const HeartDisease = () => {
     thal: ''
   });
 
+  // Additional fields for enhanced LLM summary
+  const [additionalInfo, setAdditionalInfo] = useState({
+    patientName: '',
+    hospitalName: '',
+    familyHistory: '',
+    smokingStatus: '',
+    symptoms: '',
+    medications: ''
+  });
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number | null>(null);
@@ -34,6 +44,13 @@ const HeartDisease = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAdditionalInfoChange = (field: string, value: string) => {
+    setAdditionalInfo(prev => ({
       ...prev,
       [field]: value
     }));
@@ -68,7 +85,13 @@ const HeartDisease = () => {
     setIsAnalyzing(true);
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/predict-heart", formData, {
+      // Combine both form data and additional info for the request
+      const combinedData = {
+        ...formData,
+        ...additionalInfo
+      };
+
+      const response = await axios.post("http://127.0.0.1:8000/predict-heart", combinedData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -94,7 +117,6 @@ const HeartDisease = () => {
       setIsAnalyzing(false);
     }
   };
-
 
   const formFields = [
     { key: 'age', label: 'Age', type: 'number', placeholder: 'Enter age in years' },
@@ -197,7 +219,99 @@ const HeartDisease = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Patient Information Card */}
+            <Card className="border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <User className="w-5 h-5 text-red-600" />
+                  <span>Patient Information</span>
+                </CardTitle>
+                <CardDescription>
+                  Enter patient details and additional clinical information
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="patientName">Patient Name</Label>
+                    <Input
+                      id="patientName"
+                      placeholder="Enter patient's full name"
+                      value={additionalInfo.patientName}
+                      onChange={(e) => handleAdditionalInfoChange('patientName', e.target.value)}
+                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hospitalName">Hospital Name</Label>
+                    <Input
+                      id="hospitalName"
+                      placeholder="Name of the hospital"
+                      value={additionalInfo.hospitalName}
+                      onChange={(e) => handleAdditionalInfoChange('hospitalName', e.target.value)}
+                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="familyHistory">Family History</Label>
+                    <Select
+                      value={additionalInfo.familyHistory}
+                      onValueChange={(value) => handleAdditionalInfoChange('familyHistory', value)}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
+                        <SelectValue placeholder="Family history of heart disease?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No family history</SelectItem>
+                        <SelectItem value="parents">Parents</SelectItem>
+                        <SelectItem value="siblings">Siblings</SelectItem>
+                        <SelectItem value="grandparents">Grandparents</SelectItem>
+                        <SelectItem value="multiple">Multiple relatives</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smokingStatus">Smoking Status</Label>
+                    <Select
+                      value={additionalInfo.smokingStatus}
+                      onValueChange={(value) => handleAdditionalInfoChange('smokingStatus', value)}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
+                        <SelectValue placeholder="Select smoking status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="never">Never smoked</SelectItem>
+                        <SelectItem value="former">Former smoker</SelectItem>
+                        <SelectItem value="current">Current smoker</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="symptoms">Current Symptoms</Label>
+                    <Input
+                      id="symptoms"
+                      placeholder="Describe any current symptoms (e.g., chest pain, shortness of breath)"
+                      value={additionalInfo.symptoms}
+                      onChange={(e) => handleAdditionalInfoChange('symptoms', e.target.value)}
+                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="medications">Current Medications</Label>
+                    <Input
+                      id="medications"
+                      placeholder="List current medications (especially heart-related)"
+                      value={additionalInfo.medications}
+                      onChange={(e) => handleAdditionalInfoChange('medications', e.target.value)}
+                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Health Parameters Card */}
             <Card className="border-0 shadow-xl">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -265,6 +379,7 @@ const HeartDisease = () => {
             </Card>
           </div>
 
+          {/* Results Section */}
           <div className="lg:col-span-1">
             <Card className="border-0 shadow-xl sticky top-8">
               <CardHeader>
@@ -331,3 +446,4 @@ const HeartDisease = () => {
 };
 
 export default HeartDisease;
+
