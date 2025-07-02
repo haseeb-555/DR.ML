@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 
 const KidneyDisease = () => {
+  // Model features in exact order as trained
   const [formData, setFormData] = useState({
     age: '',
     blood_pressure: '',
@@ -51,14 +52,19 @@ const KidneyDisease = () => {
     aanemia: ''
   });
 
-  // Additional fields for enhanced LLM summary
+  // Enhanced patient information fields
   const [additionalInfo, setAdditionalInfo] = useState({
     patientName: '',
     hospitalName: '',
     familyHistory: '',
     symptoms: '',
     medications: '',
-    duration: ''
+    duration: '',
+    smokingStatus: '',
+    alcoholConsumption: '',
+    dietaryHabits: '',
+    fluidIntake: '',
+    exerciseHabits: ''
   });
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -111,15 +117,15 @@ const KidneyDisease = () => {
     setIsAnalyzing(true);
 
     try {
-      // Combine both form data and additional info for the request
-      const combinedData = {
-        ...formData,
-        ...additionalInfo
+      // Send model features and additional info separately
+      const payload = {
+        input_data: formData,
+        additional_info: additionalInfo
       };
 
       const response = await axios.post(
         'http://127.0.0.1:8000/predict-kidney',
-        combinedData,
+        payload,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -149,42 +155,44 @@ const KidneyDisease = () => {
     }
   };
 
+  // Model features in exact order - numeric fields
   const numericFields = [
-    { key: 'age', label: 'Age', placeholder: 'Years' },
-    { key: 'blood_pressure', label: 'Blood Pressure', placeholder: 'mm Hg' },
-    { key: 'specific_gravity', label: 'Specific Gravity', placeholder: '1.005 - 1.030', step: '0.001' },
-    { key: 'blood_glucose_random', label: 'Random Blood Glucose', placeholder: 'mg/dL' },
-    { key: 'blood_urea', label: 'Blood Urea', placeholder: 'mg/dL' },
-    { key: 'serum_creatinine', label: 'Serum Creatinine', placeholder: 'mg/dL', step: '0.1' },
-    { key: 'sodium', label: 'Sodium', placeholder: 'mEq/L' },
-    { key: 'potassium', label: 'Potassium', placeholder: 'mEq/L', step: '0.1' },
-    { key: 'haemoglobin', label: 'Hemoglobin', placeholder: 'g/dL', step: '0.1' },
-    { key: 'packed_cell_volume', label: 'Packed Cell Volume', placeholder: '%' },
-    { key: 'white_blood_cell_count', label: 'White Blood Cell Count', placeholder: 'cells/cmm' },
-    { key: 'red_blood_cell_count', label: 'Red Blood Cell Count', placeholder: 'millions/cmm', step: '0.1' }
+    { key: 'age', label: 'Age of Patient', placeholder: 'Age of patient' },
+    { key: 'blood_pressure', label: 'Blood Pressure', placeholder: 'BP in mm Hg' },
+    { key: 'specific_gravity', label: 'Specific Gravity', placeholder: 'Urine specific gravity', step: '0.001' },
+    { key: 'blood_glucose_random', label: 'Blood Glucose Random', placeholder: 'Random glucose level' },
+    { key: 'blood_urea', label: 'Blood Urea', placeholder: 'Urea level' },
+    { key: 'serum_creatinine', label: 'Serum Creatinine', placeholder: 'Creatinine level', step: '0.1' },
+    { key: 'sodium', label: 'Sodium', placeholder: 'Sodium level' },
+    { key: 'potassium', label: 'Potassium', placeholder: 'Potassium level', step: '0.1' },
+    { key: 'haemoglobin', label: 'Haemoglobin', placeholder: 'Hemoglobin level', step: '0.1' },
+    { key: 'packed_cell_volume', label: 'Packed Cell Volume', placeholder: 'Volume %' },
+    { key: 'white_blood_cell_count', label: 'White Blood Cell Count', placeholder: 'Count' },
+    { key: 'red_blood_cell_count', label: 'Red Blood Cell Count', placeholder: 'Count', step: '0.1' }
   ];
 
+  // Model features in exact order - select fields
   const selectFields = [
     {
       key: 'albumin',
-      label: 'Albumin',
+      label: 'Albumin (Protein in Urine)',
       options: [
-        { value: '0', label: '0' },
-        { value: '1', label: '1+' },
-        { value: '2', label: '2+' },
-        { value: '3', label: '3+' },
-        { value: '4', label: '4+' }
+        { value: '0', label: 'Normal' },
+        { value: '1', label: 'Level 1' },
+        { value: '2', label: 'Level 2' },
+        { value: '3', label: 'Level 3' },
+        { value: '4', label: 'Level 4' }
       ]
     },
     {
       key: 'sugar',
-      label: 'Sugar',
+      label: 'Sugar (Urine Sugar Level)',
       options: [
-        { value: '0', label: '0' },
-        { value: '1', label: '1+' },
-        { value: '2', label: '2+' },
-        { value: '3', label: '3+' },
-        { value: '4', label: '4+' }
+        { value: '0', label: 'Normal' },
+        { value: '1', label: 'Level 1' },
+        { value: '2', label: 'Level 2' },
+        { value: '3', label: 'Level 3' },
+        { value: '4', label: 'Level 4' }
       ]
     },
     {
@@ -298,7 +306,7 @@ const KidneyDisease = () => {
                   <span>Patient Information</span>
                 </CardTitle>
                 <CardDescription>
-                  Enter patient details and clinical information for comprehensive analysis
+                  Enter comprehensive patient details and lifestyle information for kidney health assessment
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -350,6 +358,90 @@ const KidneyDisease = () => {
                       className="border-gray-300 focus:border-green-500 focus:ring-green-500"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smokingStatus">Smoking Status</Label>
+                    <Select
+                      value={additionalInfo.smokingStatus}
+                      onValueChange={(value) => handleAdditionalInfoChange('smokingStatus', value)}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        <SelectValue placeholder="Select smoking status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="never">Never smoked</SelectItem>
+                        <SelectItem value="former">Former smoker</SelectItem>
+                        <SelectItem value="current">Current smoker</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="alcoholConsumption">Alcohol Consumption</Label>
+                    <Select
+                      value={additionalInfo.alcoholConsumption}
+                      onValueChange={(value) => handleAdditionalInfoChange('alcoholConsumption', value)}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        <SelectValue placeholder="Alcohol consumption frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="occasional">Occasional</SelectItem>
+                        <SelectItem value="moderate">Moderate</SelectItem>
+                        <SelectItem value="heavy">Heavy</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dietaryHabits">Dietary Habits</Label>
+                    <Select
+                      value={additionalInfo.dietaryHabits}
+                      onValueChange={(value) => handleAdditionalInfoChange('dietaryHabits', value)}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        <SelectValue placeholder="Overall diet quality" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="poor">Poor (high sodium/processed)</SelectItem>
+                        <SelectItem value="average">Average</SelectItem>
+                        <SelectItem value="good">Good (balanced diet)</SelectItem>
+                        <SelectItem value="excellent">Excellent (kidney-friendly)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fluidIntake">Daily Fluid Intake</Label>
+                    <Select
+                      value={additionalInfo.fluidIntake}
+                      onValueChange={(value) => handleAdditionalInfoChange('fluidIntake', value)}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        <SelectValue placeholder="Average daily fluid intake" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low (&lt;1L/day)</SelectItem>
+                        <SelectItem value="normal">Normal (1-2L/day)</SelectItem>
+                        <SelectItem value="high">High (2-3L/day)</SelectItem>
+                        <SelectItem value="excessive">Excessive (&gt;3L/day)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="exerciseHabits">Exercise Habits</Label>
+                    <Select
+                      value={additionalInfo.exerciseHabits}
+                      onValueChange={(value) => handleAdditionalInfoChange('exerciseHabits', value)}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        <SelectValue placeholder="Physical activity level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sedentary">Sedentary</SelectItem>
+                        <SelectItem value="light">Light activity</SelectItem>
+                        <SelectItem value="moderate">Moderate activity</SelectItem>
+                        <SelectItem value="vigorous">Vigorous activity</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="symptoms">Current Symptoms</Label>
                     <Input
@@ -382,7 +474,7 @@ const KidneyDisease = () => {
                   <span>Comprehensive Health Assessment</span>
                 </CardTitle>
                 <CardDescription>
-                  Please fill in all health parameters for accurate kidney disease prediction
+                  Please fill in all health parameters for accurate kidney disease prediction (in exact model order)
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
@@ -525,4 +617,6 @@ const KidneyDisease = () => {
 };
 
 export default KidneyDisease;
+
+
 
