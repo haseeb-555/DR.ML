@@ -13,13 +13,14 @@ label_mapping = {
 }
 
 
-def load_model(model_path, device):
+def load_model(model_path, device):  # Add device here
     model = models.resnet18(pretrained=False)
     model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
     model.fc = nn.Linear(model.fc.in_features, 4)
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.load_state_dict(torch.load(model_path, map_location=device))  # uses device
     model.eval()
     return model.to(device)
+
 
 
 def preprocess_image(image_bytes):

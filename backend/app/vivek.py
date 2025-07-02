@@ -31,8 +31,6 @@ app.add_middleware(
     allow_headers=["*"],  # allow all headers (e.g., Content-Type, Authorization)
 )
 
-UPLOAD_DIR = "uploaded_mri"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 while True:
@@ -98,7 +96,18 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     return {"message": "Login successful","access_token": token, "token_type": "bearer", "user_id": db_user.id}
 
 
+
+
+
 from .auth import get_current_user
+import sys
+import torch
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from backend.preprocessing.alzhaimer import  load_model as model_azhaimer, predict as predict_alzhaimer
+UPLOAD_DIR = "uploaded_mri"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
 @app.post("/upload-mri")
 def upload_mri(
     file: UploadFile = File(...),
@@ -123,15 +132,32 @@ def upload_mri(
         shutil.copyfileobj(file.file, buffer)
 
     # Placeholder prediction
-    prediction = "Mild Dementia"
-    confidence = 92.0
+
+
+    BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+# Build full path to the model
+    model_path = os.path.join(BASE_DIR, "models", "dementia_classifier.pth")
+
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model_azhaimer(model_path, device)
+    file.file.seek(0)  # Reset the file pointer to the beginning
+    image_bytes = file.file.read()
+    pred_label, pred_class, prob = predict_alzhaimer(image_bytes, model, device)
+    confidence = float(prob[pred_label]) * 100 
+    
+
+
+    print(pred_label,pred_class,prob)
+
 
     # Save record to DB
     new_scan = models.MRIScan(
 
         filename=filename,
         file_path=file_path,
-        prediction=prediction,
+        prediction=pred_class,
         confidence=confidence,
         user_id=current_user.id
 
@@ -143,43 +169,71 @@ def upload_mri(
     return {
         "message": "MRI scan uploaded successfully",
         "id": new_scan.id,
-        "prediction": prediction,
+        "prediction": pred_class,
         "confidence": confidence
     }
 
-UPLOAD_DIR = "uploaded_brain_mri"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+
+
+
+
+
+
+
+from backend.preprocessing.brain import load_model, predict
+from .auth import get_current_user 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+mri_UPLOAD_DIR = os.path.join(BASE_DIR, "uploaded_brain_mri")
+os.makedirs(mri_UPLOAD_DIR, exist_ok=True)
 
 @app.post("/upload-brain-mri")
-def upload_brain_mri(file: UploadFile = File(...), db: Session = Depends(get_db),current_user: models.User = Depends(get_current_user)):
+def upload_brain_mri(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     print(current_user)
+
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image files are allowed")
 
     filename = file.filename
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    file_path = os.path.join(mri_UPLOAD_DIR, filename)
 
     # Duplicate check
     if db.query(models.BrainScan).filter(models.BrainScan.filename == filename).first():
         raise HTTPException(status_code=400, detail="File already uploaded")
 
-    # Save image
+    # Save image to disk
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Simulate prediction
-    tumor_classes = ["No Tumor", "Glioma", "Meningioma", "Pituitary"]
-    tumor_type = random.choice(tumor_classes)
-    confidence = round(random.uniform(85, 99), 2)
+    # Load model
+    model_path = os.path.join(BASE_DIR, "models", "brain.h5")
+    if not os.path.exists(model_path):
+        raise HTTPException(status_code=500, detail="Model file not found")
+
+    model = load_model(model_path)
+
+    # Read image bytes
+    file.file.seek(0)
+    image_bytes = file.file.read()
+
+    # Predict
+    pred_index, pred_class, prob = predict(image_bytes, model)
+
+    print("Prediction:", pred_class)
+    print("Confidence:", prob[pred_index])
 
     # Save to DB
     scan = models.BrainScan(
         filename=filename,
         file_path=file_path,
-        tumor_type=tumor_type,
-        confidence=confidence,
+        tumor_type=pred_class,
+        confidence=round(prob[pred_index] * 100, 2),
         user_id=current_user.id
-
     )
     db.add(scan)
     db.commit()
@@ -188,9 +242,18 @@ def upload_brain_mri(file: UploadFile = File(...), db: Session = Depends(get_db)
     return {
         "message": "Upload successful",
         "id": scan.id,
-        "tumor_type": tumor_type,
-        "confidence": confidence
+        "tumor_type": pred_class,
+        "confidence": round(prob[pred_index] * 100, 2)
     }
+
+
+
+
+
+
+
+
+
 
 
 @app.post("/predict-heart", response_model=dict)
