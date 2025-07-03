@@ -30,13 +30,12 @@ async def index(request: Request):
     return templates.TemplateResponse("report.html", {"request": request})
 
 
-# ✅ POST /alzhaimer-report
 @app.post("/alzhaimer-report")
 async def generate_report(request: Request):
     data = await request.json()
     query = data.get("query", "")
 
-    await session_service.create_session(
+    session_service.create_session(
         app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
     )
 
@@ -49,9 +48,15 @@ async def generate_report(request: Request):
 
     for event in events:
         if event.is_final_response():
-            session = await session_service.get_session(
+            session = session_service.get_session(
                 app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
             )
-            return JSONResponse(content={"response": event.content.parts[0].text})
+            print("Specialist Session State:", session.state)
+            print(f"session.state:", session.state.get("alzhaimer_report_response"))
+            res = session.state.get(
+                "alzhaimer_report_response", "I'm sorry, I couldn't find a response."
+            )
+
+            return JSONResponse(content={"response": res})
 
     return JSONResponse(content={"response": "No report generated."})

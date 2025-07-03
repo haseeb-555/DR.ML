@@ -11,7 +11,7 @@ load_dotenv(dotenv_path=env_path)
 # Access the variable
 MODEL = os.getenv("MODEL")
 from google.adk.agents.llm_agent import LlmAgent
-from agents.alzhaimer.prompt import PROMPT1, PROMPT2
+from chat.agents.alzhaimer.prompt import PROMPT1, PROMPT2
 
 root_agent = LlmAgent(
     name="alzhaimer_bot_agent",

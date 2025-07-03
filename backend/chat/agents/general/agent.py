@@ -12,7 +12,7 @@ load_dotenv(dotenv_path=env_path)
 MODEL = os.getenv("MODEL")
 
 from google.adk.agents.llm_agent import LlmAgent
-from agents.general.prompt import PROMPT1
+from chat.agents.general.prompt import PROMPT1
 
 
 root_agent = LlmAgent(

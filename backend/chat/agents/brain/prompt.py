@@ -30,6 +30,8 @@ You are a trusted medical assistant specializing in brain tumor diagnostics. Bas
 
 Your response should address:
 
+- HIGHLIGHT THE PREDICTION LABEL AND CONFIDENCE SCORE
+
 - What the predicted tumor type is (Glioma, Meningioma, Pituitary, or No Tumor)
 - Confidence score and what it means
 - Severity and urgency (e.g., Glioma requires urgent action, while No Tumor may still need follow-up if symptoms persist)

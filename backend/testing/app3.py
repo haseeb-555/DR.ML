@@ -6,7 +6,7 @@ from datetime import datetime
 from backend.preprocessing.kidney import (
     preprocess_input,
     get_model_names,
-    load_model_by_name,
+    load_model,
 )
 
 # Page configuration
@@ -19,6 +19,7 @@ with st.form("kidney_form"):
     name = st.text_input("Patient Name")
     hospital = st.text_input("Hospital Name")
     model_name = st.selectbox("Choose Prediction Model", get_model_names())
+    print("names:", get_model_names())
 
     age = st.number_input("Age", 0, 120)
     blood_pressure = st.number_input("Blood Pressure (mmHg)", 0, 200)
@@ -83,8 +84,7 @@ if submitted:
     }
 
     X_input = preprocess_input(user_input)
-    model = load_model_by_name(model_name)
-
+    model = load_model()
     # Predict and get probabilities if available
     if hasattr(model, "predict_proba"):
         proba = model.predict_proba(X_input)[0]
