@@ -14,7 +14,7 @@ MODEL = os.getenv("MODEL")
 
 from google.adk.agents.llm_agent import LlmAgent
 
-from agents.classify.prompt import PROMPT
+from chat.agents.classify.prompt import PROMPT
 
 root_agent = LlmAgent(
     name="classifier_agent",

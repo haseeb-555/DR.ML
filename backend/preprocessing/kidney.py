@@ -6,14 +6,14 @@ import numpy as np
 all_models = joblib.load("backend/models/kidney.joblib")
 
 
-def get_model_names():
-    """Return a list of available model names."""
-    return list(all_models.keys())
+# def get_model_names():
+#     """Return a list of available model names."""
+#     return list(all_models.keys())
 
 
-def load_model_by_name(name):
+def load_model():
     """Load model by its name from the joblib file."""
-    return all_models.get(name)
+    return all_models.get("XgBoost")
 
 
 def preprocess_input(user_input_dict):
