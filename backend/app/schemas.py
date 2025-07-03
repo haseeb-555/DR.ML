@@ -49,6 +49,7 @@ class HeartScanInput(BaseModel):
     thal: int
 
 
+
 class KidneyScanInput(BaseModel):
     age: int
     blood_pressure: int

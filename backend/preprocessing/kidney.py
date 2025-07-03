@@ -1,17 +1,21 @@
 import pandas as pd
 import numpy as np
-import joblib
+import joblib,os
 
 # Load all models from kidney.joblib
-all_models = joblib.load("backend/models/kidney.joblib")
+model_path = os.path.join(os.path.dirname(__file__), "..", "models", "kidney.joblib")
+model_path = os.path.abspath(model_path)  # optional, ensures absolute resolution
+
+all_models = joblib.load(model_path)
+
 
 
 def get_model_names():
     return list(all_models.keys())
 
 
-def load_model_by_name(name):
-    return all_models.get(name)
+def load_model():
+    return all_models.get("XgBoost")
 
 
 def preprocess_input(user_input_dict):

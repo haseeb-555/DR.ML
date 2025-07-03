@@ -1,14 +1,16 @@
 import pandas as pd
-import joblib
-
+import joblib,os
 
 def load_model():
-    return joblib.load("backend/models/best_svm_model.pkl")
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    model_path = os.path.join(base_dir, "backend", "models", "best_svm_model.pkl")
+    return joblib.load(model_path)
 
 
 def get_model_features():
-    return joblib.load("backend/models/svm_model_features.pkl")
-
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    feature_path = os.path.join(base_dir, "backend", "models", "svm_model_features.pkl")
+    return joblib.load(feature_path)
 
 def prepare_input(user_input: dict):
     """

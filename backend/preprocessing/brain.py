@@ -32,7 +32,6 @@ def preprocess_image(uploaded_file_bytes):
     
     # Add batch dimension: (1, 150, 150, 3)
     return np.expand_dims(normalized, axis=0)
-
 # Predict tumor type using the model and preprocessed image
 def predict(uploaded_file_bytes, model):
     img_tensor = preprocess_image(uploaded_file_bytes)

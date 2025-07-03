@@ -254,34 +254,55 @@ def upload_brain_mri(
 
 
 
-
-
+   
+from backend.preprocessing.heart import load_model as l, prepare_input 
+heart_model = l()
 @app.post("/predict-heart", response_model=dict)
-def predict_heart(input: schemas.HeartScanInput, db: Session = Depends(get_db),current_user: models.User = Depends(get_current_user)):
-    print(current_user)
-    data = input.dict()
-    # Dummy prediction logic (to replace with real ML)
-    result = random.choice(["Positive", "Negative"])
-    confidence = round(random.uniform(75, 95), 2)
+def predict_heart(
+    input: schemas.HeartScanInput,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    try:
+        print(f"User: {current_user.email}")
 
-    # Save to database
-    scan = models.HeartScan(
-        **data,
-        result=result,
-        confidence=confidence,
-        user_id=current_user.id
+        # Prepare input
+        input_data = input.dict()
+        input_df = prepare_input(input_data)
 
-    )
-    db.add(scan)
-    db.commit()
-    db.refresh(scan)
+        # Predict
+        prediction = heart_model.predict(input_df)[0]
+        probability = heart_model.predict_proba(input_df)[0][1]
 
-    return {
-        "message": "Prediction saved",
-        "id": scan.id,
-        "result": result,
-        "confidence": confidence
-    }
+        result = "Positive" if prediction == 1 else "Negative"
+        confidence = round(probability * 100, 2)
+
+        # Save to DB
+        #scan = models.HeartScan(
+        #    **input_data,
+        #    result=result,
+        #    confidence=confidence,
+        #   user_id=current_user.id
+        #)
+        #db.add(scan)
+        #db.commit()
+        #db.refresh(scan)
+        print(prediction,result,confidence,probability)
+
+        return {
+            "message": "Prediction successful",
+            "result": result,
+            "confidence": confidence
+        }
+
+    except Exception as e:
+        print("❌ Prediction Error:", str(e))
+        raise HTTPException(status_code=500, detail="Prediction failed: " + str(e))
+    
+
+
+
+
 
 
 
