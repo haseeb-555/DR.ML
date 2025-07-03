@@ -305,27 +305,20 @@ def predict_heart(
 
 
 
-
+from backend.preprocessing.kidney import predict_kidney_disease 
 @app.post("/predict-kidney")
 def predict_kidney(input: schemas.KidneyScanInput, db: Session = Depends(get_db),current_user: models.User = Depends(get_current_user)):
     print(current_user)
     data = input.dict()
-    
+    result=predict_kidney_disease(data)
 
     # Simulated prediction (replace with ML model)
-    result = random.choice(["CKD", "Not CKD"])
-    confidence = round(random.uniform(80, 99), 2)
-    scan = models.KidneyScan(**data, result=result, confidence=confidence, user_id=current_user.id )
-    db.add(scan)
-    db.commit()
-    db.refresh(scan)
+    #scan = models.KidneyScan(**data, result=result, confidence=confidence, user_id=current_user.id )
+    #db.add(scan)
+    #db.commit()
+    #db.refresh(scan)
 
-    return {
-        "message": "Kidney scan prediction saved",
-        "id": scan.id,
-        "result": result,
-        "confidence": confidence
-    }
+    return {result }
 
 
 

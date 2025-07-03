@@ -1,52 +1,95 @@
+
 import pandas as pd
-import numpy as np
 import joblib,os
+import numpy as np
 
-# Load all models from kidney.joblib
-model_path = os.path.join(os.path.dirname(__file__), "..", "models", "kidney.joblib")
-model_path = os.path.abspath(model_path)  # optional, ensures absolute resolution
+def predict_kidney_disease(user_input_dict):
+    """
+    Unified function to preprocess input, load model, and return prediction and confidence.
+    Args:
+        user_input_dict (dict): Raw user input
 
-all_models = joblib.load(model_path)
+    Returns:
+        dict: {
+            "prediction": "yes" or "no",
+            "confidence": float,
+            "probabilities": [prob_no, prob_yes]
+        }
+    """
+    # Load all models
+    model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "kidney.joblib"))
+    all_models = joblib.load(model_path)
+    model = all_models.get("XgBoost")  # You can make this dynamic if needed
 
-
-
-def get_model_names():
-    return list(all_models.keys())
-
-
-def load_model():
-    return all_models.get("XgBoost")
-
-
-def preprocess_input(user_input_dict):
+    # Convert to DataFrame
     df = pd.DataFrame([user_input_dict])
 
-    # Convert numerical string fields
-    num_fields = [
+    # Convert numeric string fields
+    numeric_fields = [
         "packed_cell_volume",
         "white_blood_cell_count",
-        "red_blood_cell_count",
+        "red_blood_cell_count"
     ]
-    for field in num_fields:
-        df[field] = pd.to_numeric(df[field], errors="coerce")
+    df[numeric_fields] = df[numeric_fields].apply(pd.to_numeric, errors="coerce")
 
-    # Label encoding for categorical fields
-    categorical_cols = [
-        "red_blood_cells",
-        "pus_cell",
-        "pus_cell_clumps",
-        "bacteria",
-        "hypertension",
-        "diabetes_mellitus",
-        "coronary_artery_disease",
-        "appetite",
-        "peda_edema",
-        "aanemia",
-    ]
-    from sklearn.preprocessing import LabelEncoder
+    # Encode categorical fields
+    mapping_dict = {
+        "red_blood_cells": {"normal": 0, "abnormal": 1},
+        "pus_cell": {"normal": 0, "abnormal": 1},
+        "pus_cell_clumps": {"notpresent": 0, "present": 1},
+        "bacteria": {"notpresent": 0, "present": 1},
+        "hypertension": {"no": 0, "yes": 1},
+        "diabetes_mellitus": {"no": 0, "yes": 1},
+        "coronary_artery_disease": {"no": 0, "yes": 1},
+        "appetite": {"poor": 0, "good": 1},
+        "peda_edema": {"no": 0, "yes": 1},
+        "aanemia": {"no": 0, "yes": 1},
+    }
 
-    le = LabelEncoder()
-    for col in categorical_cols:
-        df[col] = le.fit_transform(df[col].astype(str))
+    for col, mapping in mapping_dict.items():
+        if col in df.columns:
+            df[col] = df[col].map(mapping).fillna(0).astype(int)
 
-    return df
+    # Predict
+    if hasattr(model, "predict_proba"):
+        proba = model.predict_proba(df)[0]
+        prediction = int(np.argmax(proba))
+        confidence = proba[prediction]
+    else:
+        prediction = model.predict(df)[0]
+        proba = [None, None]
+        confidence = None
+
+    return {
+        "prediction": "yes" if prediction == 1 else "no",
+        "confidence": round(confidence, 4) if confidence is not None else None,
+        "probabilities": proba
+    }
+
+# test:
+# {
+#   "age": 52,
+#   "blood_pressure": 80,
+#   "specific_gravity": 1.020,
+#   "albumin": 2,
+#   "sugar": 0,
+#   "red_blood_cells": "abnormal",
+#   "pus_cell": "abnormal",
+#   "pus_cell_clumps": "present",
+#   "bacteria": "notpresent",
+#   "blood_glucose_random": 145,
+#   "blood_urea": 56,
+#   "serum_creatinine": 3.4,
+#   "sodium": 138.0,
+#   "potassium": 4.5,
+#   "haemoglobin": 11.2,
+#   "packed_cell_volume": "34",
+#   "white_blood_cell_count": "9800",
+#   "red_blood_cell_count": "4.2",
+#   "hypertension": "yes",
+#   "diabetes_mellitus": "yes",
+#   "coronary_artery_disease": "no",
+#   "appetite": "poor",
+#   "peda_edema": "yes",
+#   "aanemia": "yes"
+# }
