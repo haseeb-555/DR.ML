@@ -46,22 +46,6 @@ while True:
 
 
 
-
-my_posts = [{'title':'title1','content':'content1','id':1},{'title':'title2','content':'content2','id':2}]
-
-
-def find_post(id):
-    for p in my_posts:
-        if p['id'] == id:
-            return p
-        
-def find_index_post(id):
-    for i,p in enumerate(my_posts):
-        if p['id'] == id:
-            return i
-
-
-
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
@@ -106,71 +90,77 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 from backend.preprocessing.alzhaimer import  load_model as model_azhaimer, predict as predict_alzhaimer
 UPLOAD_DIR = "uploaded_mri"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
+import json
+from backend.report.alzhaimer import  generate_alzhaimer_report
 
 @app.post("/upload-mri")
-def upload_mri(
+async def upload_mri(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    
-    print(current_user)
+    print("🧑 User:", current_user.email)
+
+    # Validate file
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Invalid file type")
 
     filename = file.filename
     file_path = os.path.join(UPLOAD_DIR, filename)
 
-    # Duplicate check
-    existing = db.query(models.MRIScan).filter(models.MRIScan.filename == filename).first()
-    if existing:
+    # Duplicate file check
+    if db.query(models.MRIScan).filter(models.MRIScan.filename == filename).first():
         raise HTTPException(status_code=400, detail="This MRI scan has already been uploaded")
 
     # Save file to disk
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Placeholder prediction
-
-
+    # Prepare model
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-
-# Build full path to the model
     model_path = os.path.join(BASE_DIR, "models", "dementia_classifier.pth")
-
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model_azhaimer(model_path, device)
-    file.file.seek(0)  # Reset the file pointer to the beginning
-    image_bytes = file.file.read()
+
+    # Predict
+    file.file.seek(0)
+    image_bytes = await file.read()
     pred_label, pred_class, prob = predict_alzhaimer(image_bytes, model, device)
-    confidence = float(prob[pred_label]) * 100 
-    
+    confidence = float(prob[pred_label]) * 100  # Ensure native float
 
+    # Static patient info (for report)
+    patient_data = {
+        "patient_name": "John Doe",
+        "age": 72,
+        "gender": "male",
+        "hospital_name": "Hope Medical Center",
+        "family_history": "Alzheimer’s in maternal side",
+        "cognitive_symptoms": "memory loss and confusion"
+    }
 
-    print(pred_label,pred_class,prob)
+    # Report generation
+    report = await generate_alzhaimer_report(image_bytes, patient_data)
+    print("📝 Report:", report)
 
-
-    # Save record to DB
+    # Log to DB
     new_scan = models.MRIScan(
-
         filename=filename,
         file_path=file_path,
         prediction=pred_class,
-        confidence=confidence,
+        confidence=round(confidence, 2),
         user_id=current_user.id
-
     )
     db.add(new_scan)
     db.commit()
     db.refresh(new_scan)
 
+    # Return response
     return {
         "message": "MRI scan uploaded successfully",
         "id": new_scan.id,
         "prediction": pred_class,
-        "confidence": confidence
+        "confidence": round(confidence, 2),
+        "report": report
     }
 
 
@@ -183,18 +173,19 @@ def upload_mri(
 
 
 from backend.preprocessing.brain import load_model, predict
+from backend.report.brain import  generate_brain_report
 from .auth import get_current_user 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 mri_UPLOAD_DIR = os.path.join(BASE_DIR, "uploaded_brain_mri")
 os.makedirs(mri_UPLOAD_DIR, exist_ok=True)
 
 @app.post("/upload-brain-mri")
-def upload_brain_mri(
+async def upload_brain_mri(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    print(current_user)
+    print(current_user) 
 
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image files are allowed")
@@ -227,6 +218,17 @@ def upload_brain_mri(
     print("Prediction:", pred_class)
     print("Confidence:", prob[pred_index])
 
+    patient_data={
+  "patient_name": "John Doe",
+  "age": 72,
+  "gender": "male",
+  "hospital_name": "Hope Medical Center",
+  "family_history": "Alzheimer’s in maternal side",
+  "cognitive_symptoms": "memory loss and confusion"
+}
+    report=await generate_brain_report(image_bytes,patient_data)
+    print(report)
+
     # Save to DB
     scan = models.BrainScan(
         filename=filename,
@@ -254,11 +256,12 @@ def upload_brain_mri(
 
 
 
-   
+from backend.report.heart import  generate_heart_report
+
 from backend.preprocessing.heart import load_model as l, prepare_input 
 heart_model = l()
 @app.post("/predict-heart", response_model=dict)
-def predict_heart(
+async def predict_heart(
     input: schemas.HeartScanInput,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -287,12 +290,26 @@ def predict_heart(
         #db.add(scan)
         #db.commit()
         #db.refresh(scan)
+
+
+
+        data={
+        "patient_name": "John Doe",
+        "hospital_name": "Hope Medical Center",
+
+        }
+        
+        report = await generate_heart_report(input_data,data)
+        print(report)
+
         print(prediction,result,confidence,probability)
+
 
         return {
             "message": "Prediction successful",
             "result": result,
-            "confidence": confidence
+            "confidence": confidence,
+            "report":report
         }
 
     except Exception as e:
@@ -304,10 +321,11 @@ def predict_heart(
 
 
 
-
+from backend.report.kidney import  generate_kidney_report
+from numpy import float32, int64
 from backend.preprocessing.kidney import predict_kidney_disease 
 @app.post("/predict-kidney")
-def predict_kidney(input: schemas.KidneyScanInput, db: Session = Depends(get_db),current_user: models.User = Depends(get_current_user)):
+async def predict_kidney(input: schemas.KidneyScanInput, db: Session = Depends(get_db),current_user: models.User = Depends(get_current_user)):
     print(current_user)
     data = input.dict()
     result=predict_kidney_disease(data)
@@ -317,8 +335,20 @@ def predict_kidney(input: schemas.KidneyScanInput, db: Session = Depends(get_db)
     #db.add(scan)
     #db.commit()
     #db.refresh(scan)
+    data_additional={
+        "patient_name": "John Doe",
+        "hospital_name": "Hope Medical Center",
 
-    return {result }
+        }
+    report = await generate_kidney_report(data,data_additional)
+    print(report)
+    clean_result = {
+    "prediction": int(result["prediction"]) if isinstance(result["prediction"], (int64, int)) else result["prediction"],
+    "confidence": float(result["confidence"]) if isinstance(result["confidence"], (float32, float)) else result["confidence"],
+    "message": "Prediction successful",
+    "report": report
+}
+    return clean_result
 
 
 
@@ -380,74 +410,5 @@ def get_user_predictions(db: Session = Depends(get_db), current_user: models.Use
     history.sort(key=lambda x: x['created_at'], reverse=True)
     print(history)
     return history
-
-@app.get("/post",response_model=list[schemas.Post])
-def posts(db : Session = Depends(get_db)):
-
-    posts=db.query(models.Post).all()
-
-    return posts
-
-
-
-@app.post("/posts",status_code=status.HTTP_201_CREATED,response_model=schemas.Post)
-def create_posts(post:schemas.createpost,db : Session = Depends(get_db)):
-    new_post=models.Post(**post.dict())
-    db.add(new_post)
-    db.commit()
-    db.refresh(new_post)
-
-    return(new_post)
-    
-
-
-@app.get("/posts/{id}",response_model=schemas.Post)
-def get_post(id : int, response: Response,db : Session = Depends(get_db)):
-
-    post=db.query(models.Post).filter(models.Post.id==id).first()
-
-    if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post of id : {id} not found")
-
-    return post
-
-
-
-@app.delete("/posts/{id}",response_model=schemas.Post)
-def delete_post(id: int,db : Session = Depends(get_db)):
-    post=db.query(models.Post).filter(models.Post.id==id).first()
-    if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    db.delete(post)
-    db.commit()
-    return(post)
-
-
-
-
-@app.get("/sqlalchemy")
-def test_posts(db : Session = Depends(get_db)):
-    posts=db.query(models.Post).all()
-    print(posts)
-    return("data"  , posts)
-
-
-
-@app.put("/posts/{id}",response_model=schemas.Post)
-def update_post(id: int, post_data: schemas.createpost, db: Session = Depends(get_db)):
-    post_query = db.query(models.Post).filter(models.Post.id == id)
-    post = post_query.first()
-
-    if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} not found")
-
-    post_query.update(post_data.dict(), synchronize_session=False)
-    db.commit()
-
-    return post_query.first()
-
-
-
-
 
 

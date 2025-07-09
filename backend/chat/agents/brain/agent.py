@@ -12,7 +12,7 @@ load_dotenv(dotenv_path=env_path)
 MODEL = os.getenv("MODEL")
 
 from google.adk.agents.llm_agent import LlmAgent
-from agents.brain.prompt import PROMPT1, PROMPT2
+from chat.agents.brain.prompt import PROMPT1, PROMPT2
 
 
 root_agent = LlmAgent(
@@ -34,5 +34,5 @@ report_agent = LlmAgent(
     ),
     instruction=PROMPT2,
     model=MODEL,
-    output_key="brain_tumor_report_response",
+    output_key="brain_report_response",
 )
