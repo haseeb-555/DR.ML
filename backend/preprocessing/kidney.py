@@ -66,30 +66,3 @@ def predict_kidney_disease(user_input_dict):
         "probabilities": proba
     }
 
-# test:
-# {
-#   "age": 52,
-#   "blood_pressure": 80,
-#   "specific_gravity": 1.020,
-#   "albumin": 2,
-#   "sugar": 0,
-#   "red_blood_cells": "abnormal",
-#   "pus_cell": "abnormal",
-#   "pus_cell_clumps": "present",
-#   "bacteria": "notpresent",
-#   "blood_glucose_random": 145,
-#   "blood_urea": 56,
-#   "serum_creatinine": 3.4,
-#   "sodium": 138.0,
-#   "potassium": 4.5,
-#   "haemoglobin": 11.2,
-#   "packed_cell_volume": "34",
-#   "white_blood_cell_count": "9800",
-#   "red_blood_cell_count": "4.2",
-#   "hypertension": "yes",
-#   "diabetes_mellitus": "yes",
-#   "coronary_artery_disease": "no",
-#   "appetite": "poor",
-#   "peda_edema": "yes",
-#   "aanemia": "yes"
-# }

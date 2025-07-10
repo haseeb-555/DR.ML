@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response, status,HTTPException,Depends,APIRouter, File, UploadFile
+from fastapi import FastAPI, Response, status,HTTPException,Depends,APIRouter, File, UploadFile,Form
 from fastapi.params import Body
 from random import randrange
 from typing import Optional
@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
 from . import models,schemas
-from app.models import HeartScan, KidneyScan, BrainScan, MRIScan, User
+from app.models import *
 
 from sqlalchemy.orm import Session
 from .database import engine,SessionLocal,get_db
@@ -19,31 +19,47 @@ from fastapi.middleware.cors import CORSMiddleware
 from .auth import create_access_token
 
 
+import time
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app import models
+from app.database import engine
+
+# Ensure models are created in the correct DB
 models.Base.metadata.create_all(bind=engine)
 
+# Initialize FastAPI app
 app = FastAPI()
 
+# CORS settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or specify: ["http://localhost:5173"]
+    allow_origins=["*"],  # Or use frontend URL
     allow_credentials=True,
-    allow_methods=["*"],  # allow all HTTP methods (GET, POST, OPTIONS, etc.)
-    allow_headers=["*"],  # allow all headers (e.g., Content-Type, Authorization)
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-
-
+# Optional: For legacy/manual psycopg2 connection checking
 while True:
     try:
-        conn = psycopg2.connect(host='localhost',database='fastapi',user='postgres',password='Vivekreddy@123',cursor_factory=RealDictCursor)
-        cursor=conn.cursor()
-        print('connected to database ')
+        conn = psycopg2.connect(
+            host='localhost',
+            database='DRML',  # ✅ Must match the SQLAlchemy DB
+            user='postgres',
+            password='Vivekreddy@123',
+            cursor_factory=RealDictCursor
+        )
+        cursor = conn.cursor()
+        print('✅ Connected to PostgreSQL Database (DRML)')
         break
     except Exception as error:
-        print("failed to connect database")
-        print('error message : ',error)
+        print("❌ Failed to connect to PostgreSQL")
+        print('Error message:', error)
         time.sleep(2)
-
 
 
 @app.get("/")
@@ -91,11 +107,13 @@ from backend.preprocessing.alzhaimer import  load_model as model_azhaimer, predi
 UPLOAD_DIR = "uploaded_mri"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 import json
+
 from backend.report.alzhaimer import  generate_alzhaimer_report
 
 @app.post("/upload-mri")
 async def upload_mri(
     file: UploadFile = File(...),
+    additional_info: str = Form(...),  # JSON string from frontend
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -103,68 +121,77 @@ async def upload_mri(
 
     # Validate file
     if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Invalid file type")
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload an image.")
 
     filename = file.filename
     file_path = os.path.join(UPLOAD_DIR, filename)
 
-    # Duplicate file check
-    if db.query(models.MRIScan).filter(models.MRIScan.filename == filename).first():
-        raise HTTPException(status_code=400, detail="This MRI scan has already been uploaded")
+    if db.query(models.AlzheimerScan).filter(models.AlzheimerScan.filename == filename).first():
+        raise HTTPException(status_code=400, detail="This MRI scan has already been uploaded.")
 
     # Save file to disk
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Prepare model
+    # Load model
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     model_path = os.path.join(BASE_DIR, "models", "dementia_classifier.pth")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model_azhaimer(model_path, device)
 
-    # Predict
+    # Parse image & predict
     file.file.seek(0)
     image_bytes = await file.read()
     pred_label, pred_class, prob = predict_alzhaimer(image_bytes, model, device)
-    confidence = float(prob[pred_label]) * 100  # Ensure native float
+    confidence = float(prob[pred_label]) * 100
 
-    # Static patient info (for report)
-    patient_data = {
-        "patient_name": "John Doe",
-        "age": 72,
-        "gender": "male",
-        "hospital_name": "Hope Medical Center",
-        "family_history": "Alzheimer’s in maternal side",
-        "cognitive_symptoms": "memory loss and confusion"
-    }
+    # Parse JSON-formatted patient info
+    try:
+        patient_data = json.loads(additional_info)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON in additional_info")
 
-    # Report generation
+    # Generate report
     report = await generate_alzhaimer_report(image_bytes, patient_data)
-    print("📝 Report:", report)
+    print("📝 Report generated")
+    patient_data = {
+    "patient_name": patient_data["patientName"],
+    "age": patient_data["age"],
+    "gender": patient_data["gender"],
+    "hospital_name": patient_data["hospitalName"],
+    "family_history": patient_data.get("familyHistory"),
+    "current_medications": patient_data.get("currentMedications"),
+    "cognitive_symptoms": patient_data.get("cognitiveSymptoms"),
+    "smoking_status": patient_data.get("smokingStatus"),
+    "alcohol_consumption": patient_data.get("alcoholConsumption"),
+    "exercise_habits": patient_data.get("exerciseHabits"),
+    "education_level": patient_data.get("educationLevel"),
+    "living_arrangement": patient_data.get("livingArrangement"),
+}
 
-    # Log to DB
-    new_scan = models.MRIScan(
+
+    # Create DB object
+    scan = models.AlzheimerScan(
         filename=filename,
         file_path=file_path,
         prediction=pred_class,
         confidence=round(confidence, 2),
-        user_id=current_user.id
+        report=report,
+        user_id=current_user.id,
+        **patient_data  # Unpack patient info into columns
     )
-    db.add(new_scan)
-    db.commit()
-    db.refresh(new_scan)
 
-    # Return response
+    db.add(scan)
+    db.commit()
+    db.refresh(scan)
+
     return {
         "message": "MRI scan uploaded successfully",
-        "id": new_scan.id,
-        "prediction": pred_class,
-        "confidence": round(confidence, 2),
-        "report": report
+        "id": scan.id,
+        "prediction": scan.prediction,
+        "confidence": scan.confidence,
+        "report": scan.report
     }
-
-
-
 
 
 
@@ -182,61 +209,66 @@ os.makedirs(mri_UPLOAD_DIR, exist_ok=True)
 @app.post("/upload-brain-mri")
 async def upload_brain_mri(
     file: UploadFile = File(...),
+    additional_info: str = Form(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    print(current_user) 
-
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image files are allowed")
 
     filename = file.filename
     file_path = os.path.join(mri_UPLOAD_DIR, filename)
 
-    # Duplicate check
-    if db.query(models.BrainScan).filter(models.BrainScan.filename == filename).first():
+    if db.query(models.BrainScanReport).filter(models.BrainScanReport.filename == filename).first():
         raise HTTPException(status_code=400, detail="File already uploaded")
 
-    # Save image to disk
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Load model
     model_path = os.path.join(BASE_DIR, "models", "brain.h5")
     if not os.path.exists(model_path):
         raise HTTPException(status_code=500, detail="Model file not found")
 
     model = load_model(model_path)
-
-    # Read image bytes
     file.file.seek(0)
     image_bytes = file.file.read()
-
-    # Predict
     pred_index, pred_class, prob = predict(image_bytes, model)
 
-    print("Prediction:", pred_class)
-    print("Confidence:", prob[pred_index])
+    # Parse JSON string into dict
+    try:
+        info = json.loads(additional_info)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid patient info JSON")
 
-    patient_data={
-  "patient_name": "John Doe",
-  "age": 72,
-  "gender": "male",
-  "hospital_name": "Hope Medical Center",
-  "family_history": "Alzheimer’s in maternal side",
-  "cognitive_symptoms": "memory loss and confusion"
-}
-    report=await generate_brain_report(image_bytes,patient_data)
-    print(report)
+    # Map camelCase to snake_case manually
+    patient_data = {
+        "patient_name": info.get("patientName"),
+        "age": int(info.get("age")),
+        "gender": info.get("gender"),
+        "hospital_name": info.get("hospitalName"),
+        "family_history": info.get("familyHistoryBrainTumor"),
+        "previous_cancer": info.get("previousCancerHistory"),
+        "radiation_exp": info.get("radiationExposure"),
+        "occupational_exp": info.get("occupationalExposure"),
+        "smoking_status": info.get("smokingStatus"),
+        "alcohol_use": info.get("alcoholConsumption"),
+        "symptoms": info.get("neurologicalSymptoms"),
+        "medications": info.get("currentMedications"),
+    }
 
-    # Save to DB
-    scan = models.BrainScan(
+    report = await generate_brain_report(image_bytes, patient_data)
+
+    # Save to database
+    scan = models.BrainScanReport(
         filename=filename,
         file_path=file_path,
+        user_id=current_user.id,
         tumor_type=pred_class,
         confidence=round(prob[pred_index] * 100, 2),
-        user_id=current_user.id
+        report=report,
+        **patient_data
     )
+
     db.add(scan)
     db.commit()
     db.refresh(scan)
@@ -245,12 +277,9 @@ async def upload_brain_mri(
         "message": "Upload successful",
         "id": scan.id,
         "tumor_type": pred_class,
-        "confidence": round(prob[pred_index] * 100, 2)
+        "confidence": round(prob[pred_index] * 100, 2),
+        "report": report
     }
-
-
-
-
 
 
 
@@ -260,64 +289,68 @@ from backend.report.heart import  generate_heart_report
 
 from backend.preprocessing.heart import load_model as l, prepare_input 
 heart_model = l()
+from app.schemas import HeartPayload
+
 @app.post("/predict-heart", response_model=dict)
 async def predict_heart(
-    input: schemas.HeartScanInput,
+    payload: HeartPayload,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     try:
         print(f"User: {current_user.email}")
 
-        # Prepare input
-        input_data = input.dict()
-        input_df = prepare_input(input_data)
+        # Extract input
+        input_data = payload.input_data.dict()
+        extended = payload.additional_info.dict()
 
-        # Predict
+        # Preprocess and predict
+        input_df = prepare_input(input_data)
         prediction = heart_model.predict(input_df)[0]
         probability = heart_model.predict_proba(input_df)[0][1]
 
         result = "Positive" if prediction == 1 else "Negative"
-        confidence = round(probability * 100, 2)
+        confidence = float(round(probability * 100, 2))
+
+        # Generate report
+        report = await generate_heart_report(input_data, extended)
 
         # Save to DB
-        #scan = models.HeartScan(
-        #    **input_data,
-        #    result=result,
-        #    confidence=confidence,
-        #   user_id=current_user.id
-        #)
-        #db.add(scan)
-        #db.commit()
-        #db.refresh(scan)
+        record = models.HeartScanReport(
+            user_id=current_user.id,
+            **input_data,  # core input fields
+            patient_name=extended.get("patientName"),
+            hospital_name=extended.get("hospitalName"),
+            family_history=extended.get("familyHistory"),
+            smoking_status=extended.get("smokingStatus"),
+            alcohol_consumption=extended.get("alcoholConsumption"),
+            exercise_habits=extended.get("exerciseHabits"),
+            dietary_habits=extended.get("dietaryHabits"),
+            stress_levels=extended.get("stressLevels"),
+            current_medications=extended.get("currentMedications"),
+            symptoms=extended.get("symptoms"),
+            occupational_hazards=extended.get("occupationalHazards"),
+            sleep_quality=extended.get("sleepQuality"),
+            result=result,
+            confidence=confidence,
+            report=report
+        )
 
-
-
-        data={
-        "patient_name": "John Doe",
-        "hospital_name": "Hope Medical Center",
-
-        }
-        
-        report = await generate_heart_report(input_data,data)
-        print(report)
-
-        print(prediction,result,confidence,probability)
-
+        db.add(record)
+        db.commit()
+        db.refresh(record)
 
         return {
             "message": "Prediction successful",
             "result": result,
             "confidence": confidence,
-            "report":report
+            "report": report,
+            "record_id": record.id
         }
 
     except Exception as e:
         print("❌ Prediction Error:", str(e))
         raise HTTPException(status_code=500, detail="Prediction failed: " + str(e))
-    
-
-
 
 
 
@@ -325,23 +358,72 @@ from backend.report.kidney import  generate_kidney_report
 from numpy import float32, int64
 from backend.preprocessing.kidney import predict_kidney_disease 
 @app.post("/predict-kidney")
-async def predict_kidney(input: schemas.KidneyScanInput, db: Session = Depends(get_db),current_user: models.User = Depends(get_current_user)):
+async def predict_kidney(input: schemas.KidneyScanRequest, db: Session = Depends(get_db),current_user: models.User = Depends(get_current_user)):
     print(current_user)
-    data = input.dict()
-    result=predict_kidney_disease(data)
+    form_data_dict = input.formData.dict()
+    additional_info_dict=input.additionalInfo.dict()
 
-    # Simulated prediction (replace with ML model)
-    #scan = models.KidneyScan(**data, result=result, confidence=confidence, user_id=current_user.id )
-    #db.add(scan)
-    #db.commit()
-    #db.refresh(scan)
-    data_additional={
-        "patient_name": "John Doe",
-        "hospital_name": "Hope Medical Center",
-
-        }
-    report = await generate_kidney_report(data,data_additional)
+    result=predict_kidney_disease(form_data_dict)
+    report = await generate_kidney_report(form_data_dict,additional_info_dict)
     print(report)
+
+
+    from app.models import KidneyScan  # adjust path if needed
+
+# Create a new KidneyScan ORM object
+    scan = KidneyScan(
+        age=form_data_dict["age"],
+        blood_pressure=form_data_dict["blood_pressure"],
+        specific_gravity=form_data_dict["specific_gravity"],
+        albumin=form_data_dict["albumin"],
+        sugar=form_data_dict["sugar"],
+        red_blood_cells=form_data_dict["red_blood_cells"],
+        pus_cell=form_data_dict["pus_cell"],
+        pus_cell_clumps=form_data_dict["pus_cell_clumps"],
+        bacteria=form_data_dict["bacteria"],
+        blood_glucose_random=form_data_dict["blood_glucose_random"],
+        blood_urea=form_data_dict["blood_urea"],
+        serum_creatinine=form_data_dict["serum_creatinine"],
+        sodium=form_data_dict["sodium"],
+        potassium=form_data_dict["potassium"],
+        haemoglobin=form_data_dict["haemoglobin"],
+        packed_cell_volume=str(form_data_dict["packed_cell_volume"]),
+        white_blood_cell_count=str(form_data_dict["white_blood_cell_count"]),
+        red_blood_cell_count=str(form_data_dict["red_blood_cell_count"]),
+        hypertension=form_data_dict["hypertension"],
+        diabetes_mellitus=form_data_dict["diabetes_mellitus"],
+        coronary_artery_disease=form_data_dict["coronary_artery_disease"],
+        appetite=form_data_dict["appetite"],
+        peda_edema=form_data_dict["peda_edema"],
+        aanemia=form_data_dict["aanemia"],
+
+    # Additional Info
+        patient_name=additional_info_dict["patientName"],
+        hospital_name=additional_info_dict["hospitalName"],
+        family_history=additional_info_dict["familyHistory"],
+        symptoms=additional_info_dict["symptoms"],
+        medications=additional_info_dict["medications"],
+        duration=additional_info_dict["duration"],
+        smoking_status=additional_info_dict["smokingStatus"],
+        alcohol_consumption=additional_info_dict["alcoholConsumption"],
+        dietary_habits=additional_info_dict["dietaryHabits"],
+        fluid_intake=additional_info_dict["fluidIntake"],
+        exercise_habits=additional_info_dict["exerciseHabits"],
+
+    # Output
+        result=result["prediction"],
+        confidence = float(result["confidence"]),
+
+
+    # Foreign key and timestamp
+        user_id=current_user.id
+    )
+
+# Add to DB session
+    db.add(scan)
+    db.commit()
+    db.refresh(scan)  
+
     clean_result = {
     "prediction": int(result["prediction"]) if isinstance(result["prediction"], (int64, int)) else result["prediction"],
     "confidence": float(result["confidence"]) if isinstance(result["confidence"], (float32, float)) else result["confidence"],

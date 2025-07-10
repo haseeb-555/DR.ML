@@ -93,67 +93,66 @@ const KidneyDisease = () => {
     );
     return emptyFields.length === 0;
   };
+const handlePredict = async () => {
+  if (!validateForm()) {
+    toast({
+      title: 'Incomplete form',
+      description: 'Please fill in all fields before prediction',
+      variant: 'destructive'
+    });
+    return;
+  }
 
-  const handlePredict = async () => {
-    if (!validateForm()) {
-      toast({
-        title: 'Incomplete form',
-        description: 'Please fill in all fields before prediction',
-        variant: 'destructive'
-      });
-      return;
-    }
+  const token = localStorage.getItem('token');
+  if (!token) {
+    toast({
+      title: 'Unauthorized',
+      description: 'Please log in to use this feature',
+      variant: 'destructive'
+    });
+    return;
+  }
 
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast({
-        title: 'Unauthorized',
-        description: 'Please log in to use this feature',
-        variant: 'destructive'
-      });
-      return;
-    }
+  setIsAnalyzing(true);
 
-    setIsAnalyzing(true);
+  try {
+    // Merge formData (model input) and additionalInfo (extra data)
+    const payload = {
+      formData,
+      additionalInfo
+    };
 
-    try {
-      // Send model features and additional info separately
-      const payload = {
-        input_data: formData,
-        additional_info: additionalInfo
-      };
-
-      const response = await axios.post(
-        'http://127.0.0.1:8000/predict-kidney',
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          }
+    const response = await axios.post(
+      'http://127.0.0.1:8000/predict-kidney',
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
         }
-      );
+      }
+    );
 
-      const { result, confidence } = response.data;
-      setResult(result);
-      setConfidence(confidence);
+    const { prediction, confidence } = response.data;
+    setResult(prediction);
+    setConfidence(confidence);
 
-      toast({
-        title: 'Prediction Complete',
-        description: `CKD Status: ${result} (${confidence}% confidence)`
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description:
-          error?.response?.data?.detail ||
-          'Failed to connect or unauthorized request',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
+    toast({
+      title: 'Prediction Complete',
+      description: `CKD Status: ${prediction} (${confidence}% confidence)`
+    });
+  } catch (error: any) {
+    toast({
+      title: 'Error',
+      description:
+        error?.response?.data?.detail ||
+        'Failed to connect or unauthorized request',
+      variant: 'destructive'
+    });
+  } finally {
+    setIsAnalyzing(false);
+  }
+};
 
   // Model features in exact order - numeric fields
   const numericFields = [
