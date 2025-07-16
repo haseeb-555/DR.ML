@@ -100,12 +100,3 @@ CREATE DATABASE medical_predictions;
 Configure DB connection in `.env` or directly in your FastAPI settings.
 
 ---
-
-## 📌 TODO
-
-- [ ] Integrate all ML models with API
-- [ ] Connect PostgreSQL for storing user history
-- [ ] Streamlit app for each disease category
-- [ ] Deploy to Render / Heroku / Railway
-
----
